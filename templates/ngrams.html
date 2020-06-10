@@ -1,0 +1,5 @@
+<!doctype html>
+<title>Hello from Flask</title>
+{% for phrase, number in list %}
+    <li><a href="{{ '/word/'+ phrase}}">{{phrase}} - {{number}}</a></li>
+{% endfor %}
