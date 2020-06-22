@@ -1,5 +1,28 @@
-<!doctype html>
-<title>Hello from Flask</title>
-{% for phrase, number in list %}
-    <li><a href="{{ '/word/'+ phrase}}">{{phrase}} - {{number}}</a></li>
+{% extends "nav.html" %}
+{% block content %}
+{% for element in list %}
+    <div>
+        <input type="checkbox" onclick="myfunc('{{element.ngram}}')" {{element.checked}}><a href="{{ '/word/'+ element.ngram}}">{{element.ngram}} - {{element.count}}</a></li>
+    </div>
 {% endfor %}
+
+<script src="{{url_for('static', filename='request.js')}}"></script>
+<script>
+    async function myfunc(ngram) {
+        let result = await makeRequest("POST", "/toggle", ngram)
+        console.log(result)
+    }
+
+
+    function makeRequest(method, url, ngram)
+    {
+        var xhr = new XMLHttpRequest()
+        xhr.open(method, url);
+        xhr.open('POST', '/toggle')
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+        xhr.send('ngram=' + ngram + '&n=' + '{{n}}')
+    }
+</script>
+
+{% endblock %}
+
