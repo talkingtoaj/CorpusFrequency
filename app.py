@@ -14,7 +14,7 @@ except FileNotFoundError:
             result[0]: {
                 "ngram": result[0],
                 "count": result[1],
-                "checked": "checked",
+                "checked": True,
             } for result in results[str(n)]
         }
 
@@ -22,7 +22,7 @@ except FileNotFoundError:
 def toggle():
     ngram = request.form['ngram']
     n = request.form['n']
-    state[n][ngram]["checked"] = "" if state[n][ngram]["checked"] == "checked" else "checked"
+    state[n][ngram]["checked"] = not state[n][ngram]["checked"]
     save_state()
     return ""
 

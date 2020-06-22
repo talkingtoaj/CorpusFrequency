@@ -2,7 +2,7 @@
 {% block content %}
 {% for element in list %}
     <div>
-        <input type="checkbox" onclick="myfunc('{{element.ngram}}')" {{element.checked}}><a href="{{ '/word/'+ element.ngram}}">{{element.ngram}} - {{element.count}}</a></li>
+        <input type="checkbox" onclick="myfunc('{{element.ngram}}')" {{'checked' if element.checked else ''}}><a href="{{ '/word/'+ element.ngram}}">{{element.ngram}} - {{element.count}}</a></li>
     </div>
 {% endfor %}
 
