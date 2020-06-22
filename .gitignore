@@ -1,3 +1,7 @@
+# sensitive information
+input_files
+output.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -116,6 +120,9 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
+
+# VSCode project settings
+.vscode
 
 # mkdocs documentation
 /site
