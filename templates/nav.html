@@ -2,13 +2,16 @@
 {% for i in ('2', '3', '4', '5', '6') %}
 <a href="{{ '/ngrams/'+ i}}" style="font-size: 64px;"> #{{i}}</a>
 {% endfor %}
-<button onclick="triggerExport()">Export</button>
+<a href="/export"><button>Export</button></a>
+<button onclick="triggerClear()" style="margin-left: 100px;">Clear</button>
+
 <script>
-    function triggerExport() {
+    function triggerClear() {
         var xhr = new XMLHttpRequest()
-        xhr.open('POST', '/export')
+        xhr.open('POST', '/clear', false)
         xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
         xhr.send()
+        location.reload()
     }
 </script>
 

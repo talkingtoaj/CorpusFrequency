@@ -8,6 +8,7 @@ docx2txt = "*"
 pylint = "*"
 sklearn = "*"
 flask = "*"
+nltk = "*"
 
 [dev-packages]
 

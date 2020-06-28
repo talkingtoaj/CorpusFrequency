@@ -1,3 +1,8 @@
+# Usage
+Place the word documents in a folder called 'input_files'
+Install and activate the virtual environment
+Run `python3 app.py`
+
 # CorpusFrequency
 Analysing the most frequent words and phrases in a corpus
 

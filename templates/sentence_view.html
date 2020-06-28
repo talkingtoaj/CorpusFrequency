@@ -1,0 +1,17 @@
+{% extends "nav.html" %}
+{% block content %}
+<h2>{{ngram}}</h2>
+{% for result in results %}
+    <li><input type="checkbox" onclick="toggleSentence('{{result.sentence}}')" {{'checked' if result.sentence in sentences}}>{{ result.fileName }} {{ result.markup_sentence | safe}}</li>
+{% endfor %}
+
+<script>
+    function toggleSentence(sentence) {
+        var xhr = new XMLHttpRequest()
+        xhr.open('POST', '/toggle-sentence')
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+        xhr.send('ngram={{ngram}}' + '&sentence=' + sentence)
+    }
+</script>
+
+{% endblock %}

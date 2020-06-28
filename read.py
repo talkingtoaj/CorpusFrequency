@@ -1,17 +1,23 @@
 import docx2txt, os
 
-output = open("output.txt", "w")
+FOLDER = "input_files"
+FILE_NAME = "output.txt"
 
-for entry in os.scandir("input_files"):
-    text = docx2txt.process(entry.path)
+if os.path.isfile(FILE_NAME):
+    print(f"not regenerating '{FILE_NAME}' as it already exists")
+else:
+    output = open(FILE_NAME, "w")
 
-    text = text.replace("\n", " ")
-    while text.count("  ") != 0:
-        text = text.replace("  ", " ")
+    for entry in os.scandir(FOLDER):
+        text = docx2txt.process(entry.path)
 
-    source_file = entry.path.split("/")[-1]
+        text = text.replace("\n", " ")
+        while text.count("  ") != 0:
+            text = text.replace("  ", " ")
 
-    output.write(f"===SOURCE-FILE:{source_file}===\n")
-    output.write(text + "\n")
+        source_file = entry.path.split("/")[-1]
 
-output.close()
+        output.write(f"===SOURCE-FILE:{source_file}===\n")
+        output.write(text + "\n")
+
+    output.close()
