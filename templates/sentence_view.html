@@ -3,19 +3,19 @@
 <h2>{{ngram}}</h2>
 <textarea id="textarea" style="min-width: 75%;">{{chosen_text}}</textarea>
 <div>
-    <button onclick="submitText()">Submit</button><span id="response"></span>
+    <button onclick="saveText()">Save</button><span id="response"></span>
 </div>
 {% for result in results %}
     <li>{{ result.fileName }} {{ result.markup_sentence | safe}}</li>
 {% endfor %}
 
 <script>
-    function submitText(sentence) {
+    function saveText(sentence) {
         var xhr = new XMLHttpRequest()
-        xhr.open('POST', '/submit-text')
+        xhr.open('POST', '/save-text')
         xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
         xhr.send('ngram={{ngram}}' + '&chosen_text=' + document.getElementById("textarea").value)
-        document.getElementById("response").innerHTML = "Submitted";
+        document.getElementById("response").innerHTML = "Saved";
     }
 </script>
 

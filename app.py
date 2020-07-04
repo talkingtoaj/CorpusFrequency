@@ -35,7 +35,7 @@ load()
 def home():
     return render_template("nav.html")
 
-@app.route("/submit-text", methods=["POST"])
+@app.route("/save-text", methods=["POST"])
 def choose():
     ngram = request.form['ngram']
     n = ngrams_to_n[ngram]
