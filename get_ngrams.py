@@ -17,10 +17,4 @@ for n in range(1,7):
 
     freqs = X.sum(axis=0).A1
 
-    result = list(zip(terms, freqs))
-
-    result.sort(key=lambda x: -x[1])
-
-    result = result[:20]
-
-    results[str(n)] = result
+    results[str(n)] = sorted([pair for pair in zip(terms, freqs) if pair[1] >=4], key=lambda pair: -pair[1])
