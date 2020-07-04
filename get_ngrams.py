@@ -2,7 +2,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 import read
 file_contents = []
 
-with open("output.txt", "r") as file:
+with open("output.txt", "r", encoding='utf-8') as file:
     file_contents = file.read().split("\n")
 
 file_contents = [line for line in file_contents if not line.count("SOURCE-FILE") > 0]

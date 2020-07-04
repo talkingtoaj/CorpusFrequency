@@ -3,7 +3,7 @@ nltk.download("punkt")
 
 file_contents = []
 
-with open("output.txt", "r") as file:
+with open("output.txt", "r", encoding='utf-8') as file:
     file_contents = file.read().split("\n")
 
 file_contents = [[file_contents[2*index], file_contents[2*index+1]] for index in range(int(len(file_contents)/2))]

@@ -6,7 +6,7 @@ FILE_NAME = "output.txt"
 if os.path.isfile(FILE_NAME):
     print(f"not regenerating '{FILE_NAME}' as it already exists")
 else:
-    output = open(FILE_NAME, "w")
+    output = open(FILE_NAME, "w", encoding='utf-8')
 
     for entry in os.scandir(FOLDER):
         text = docx2txt.process(entry.path)
