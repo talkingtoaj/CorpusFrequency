@@ -17,7 +17,7 @@ def load():
         with open(STATE_FILE, "rb") as file:
             ngram_groups = pickle.load(file)
     except FileNotFoundError:
-        for n in range(2, 7):
+        for n in range(1, 7):
             ngram_groups[str(n)] = {
                 result[0]: {
                     "ngram": result[0],

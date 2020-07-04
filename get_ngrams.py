@@ -10,7 +10,7 @@ file_contents = [line for line in file_contents if not line.count("SOURCE-FILE")
 #print(file_contents)
 
 results = {}
-for n in range(2,7):
+for n in range(1,7):
     vectorizer = CountVectorizer(ngram_range=(n,n))
     X = vectorizer.fit_transform(file_contents)
     terms = vectorizer.get_feature_names()
