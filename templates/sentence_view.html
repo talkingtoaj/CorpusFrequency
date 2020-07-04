@@ -1,16 +1,21 @@
 {% extends "nav.html" %}
 {% block content %}
 <h2>{{ngram}}</h2>
+<textarea id="textarea" style="min-width: 75%;">{{chosen_text}}</textarea>
+<div>
+    <button onclick="submitText()">Submit</button><span id="response"></span>
+</div>
 {% for result in results %}
-    <li><input type="checkbox" onclick="toggleSentence('{{result.sentence}}')" {{'checked' if result.sentence in sentences}}>{{ result.fileName }} {{ result.markup_sentence | safe}}</li>
+    <li>{{ result.fileName }} {{ result.markup_sentence | safe}}</li>
 {% endfor %}
 
 <script>
-    function toggleSentence(sentence) {
+    function submitText(sentence) {
         var xhr = new XMLHttpRequest()
-        xhr.open('POST', '/toggle-sentence')
+        xhr.open('POST', '/submit-text')
         xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
-        xhr.send('ngram={{ngram}}' + '&sentence=' + sentence)
+        xhr.send('ngram={{ngram}}' + '&chosen_text=' + document.getElementById("textarea").value)
+        document.getElementById("response").innerHTML = "Submitted";
     }
 </script>
 

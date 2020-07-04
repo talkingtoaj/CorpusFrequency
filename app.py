@@ -22,8 +22,7 @@ def load():
                 result[0]: {
                     "ngram": result[0],
                     "count": result[1],
-                    "checked": False,
-                    "sentences": [],
+                    "chosen_text": "",
                 } for result in results[str(n)]
             }
     for n, groups in ngram_groups.items():
@@ -36,24 +35,11 @@ load()
 def home():
     return render_template("nav.html")
 
-@app.route("/toggle-ngram", methods=["POST"])
-def toggle():
-    ngram = request.form['ngram']
-    n = ngrams_to_n[ngram]
-    ngram_groups[n][ngram]["checked"] = not ngram_groups[n][ngram]["checked"]
-    save_state()
-    return ""
-
-@app.route("/toggle-sentence", methods=["POST"])
+@app.route("/submit-text", methods=["POST"])
 def choose():
     ngram = request.form['ngram']
     n = ngrams_to_n[ngram]
-    sentence = request.form['sentence']
-    sentences = ngram_groups[n][ngram]["sentences"]
-    if sentence in sentences:
-        sentences.remove(sentence)
-    else:
-        sentences.append(sentence)
+    ngram_groups[n][ngram]["chosen_text"] = request.form["chosen_text"]
     save_state()
     return ""
 
@@ -64,7 +50,7 @@ def ngrams(n):
 @app.route("/sentences/<ngram>")
 def sentences(ngram):
     n = ngrams_to_n[ngram]
-    return render_template("sentence_view.html", results=search(ngram), ngram=ngram, sentences=ngram_groups[n][ngram]["sentences"])
+    return render_template("sentence_view.html", results=search(ngram), ngram=ngram, chosen_text=ngram_groups[n][ngram]["chosen_text"])
 
 @app.route("/export")
 def export():
@@ -76,9 +62,8 @@ def export():
     writer.writeheader()
     for group in ngram_groups.values():
         for ngram, value in group.items():
-            if value["checked"]:
-                for sentence in value["sentences"]:
-                    writer.writerow({'ngram': ngram, 'sentence': sentence})
+            if value['chosen_text'] != '':
+                writer.writerow({'ngram': ngram, 'sentence': value['chosen_text']})
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=sentences.csv"
     output.headers["Content-type"] = "text/csv"
