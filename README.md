@@ -1,9 +1,16 @@
 # Usage
 Place the word documents in a folder called 'input_files'
 
+Only reads *.docx files.
+
 Install and activate the virtual environment
 
 Run `python3 app.py`
+
+
+
+Q: Do we need to run read.py to load in the new files?
+
 
 # CorpusFrequency
 Analysing the most frequent words and phrases in a corpus
