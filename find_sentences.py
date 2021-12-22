@@ -16,9 +16,13 @@ def search(ngram):
     results = []
     for name, content in file_contents:
         for sentence in content:
-            _sentence = list(sentence)
             location = sentence.lower().find(ngram)
-            if location == -1: continue
+            start = max(0, location-60)
+            end = min(len(sentence), location+60)
+            sentence = sentence[start:end]
+            _sentence = list(sentence)
+            if location == -1: 
+                continue
             _sentence.insert(location, "<b>")
             _sentence.insert(location + len(ngram) + 1, "</b>")
 
