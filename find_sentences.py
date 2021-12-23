@@ -1,4 +1,5 @@
 import nltk, read
+import re
 nltk.download("punkt")
 
 file_contents = []
@@ -12,23 +13,29 @@ for i in range(len(file_contents)):
     file_contents[i][1] = nltk.tokenize.sent_tokenize(file_contents[i][1])
 
 def search(ngram):
-    ngram = ngram.replace("%20", " ")
+    ngram = ngram.replace("%20", " ").upper()
+    # set word boundaries (\b) and allow spaces to also represent stripped non-alphanumeric characters (\W)
+    re_ngram = re.compile(r"\b" + ngram.replace(' ',r'\W') + r"\b")
     results = []
     for name, content in file_contents:
         for sentence in content:
-            location = sentence.lower().find(ngram)
-            start = max(0, location-60)
-            end = min(len(sentence), location+60)
-            sentence = sentence[start:end]
-            _sentence = list(sentence)
-            if location == -1: 
+            # find location of regex pattern re_ngram in sentence
+            match = re_ngram.search(sentence.upper())
+            if match is None: 
                 continue
-            _sentence.insert(location, "<b>")
-            _sentence.insert(location + len(ngram) + 1, "</b>")
+            match_start = match.start()
+            match_end = match.end()
+            start = max(0, match_start-60)
+            end = min(len(sentence), match_end+60)
 
+            truncated_sentence = sentence[start:end]
+            match = re_ngram.search(truncated_sentence.upper())
+            match_start = match.start()
+            match_end = match.end()
+            markup_sentence = truncated_sentence[:match_start] + "<b>" + truncated_sentence[match_start:match_end] + "</b>" + truncated_sentence[match_end:]
             results.append({
                 "fileName": name, 
-                "markup_sentence": ''.join(_sentence),
-                "sentence": sentence
+                "markup_sentence": markup_sentence,
+                "sentence": truncated_sentence
             })
     return results
