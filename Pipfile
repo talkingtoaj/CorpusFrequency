@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+docx2txt = "*"
+pylint = "*"
+flask = "*"
+nltk = "*"
+tika = "*"
+pipenv = "*"
+scikit-learn = "*"
+
+[requires]
+python_version = "3.11"
