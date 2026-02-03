@@ -1,6 +1,6 @@
 from sklearn.feature_extraction.text import CountVectorizer
 import read
-import nltk, read
+import nltk
 nltk.download("punkt")
 
 file_contents = []
