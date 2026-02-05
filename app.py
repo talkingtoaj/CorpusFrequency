@@ -28,8 +28,10 @@ def load():
     for n, groups in ngram_groups.items():
         for ngram in groups:
             ngrams_to_n[ngram] = n
+    print(ngrams_to_n)
 
 load()
+
 
 @app.route("/")
 def home():
