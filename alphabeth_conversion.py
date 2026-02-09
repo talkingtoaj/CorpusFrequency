@@ -11,4 +11,4 @@ def upper_lower(sentence):
             lower_case_list.append(turkey[alphabet])
         else:
             lower_case_list.append(alphabet)
-        return ''.join(lower_case_list) 
+    return ''.join(lower_case_list) 

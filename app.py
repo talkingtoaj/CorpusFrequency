@@ -18,17 +18,23 @@ def load():
             ngram_groups = pickle.load(file)
     except FileNotFoundError:
         for n in range(1, 7):
-            ngram_groups[str(n)] = {
-                result[0]: {
-                    "ngram": result[0],
-                    "count": result[1],
-                    "chosen_text": "",
-                } for result in results[str(n)]
-            }
+            ngram_groups[str(n)] = {}
+            for result in results[str(n)]:
+                ngram = result[0]
+                count = result[1]
+                #search for the first sentence containing this ngram 
+                sentences = search(ngram)
+                chosen_text = sentences[0] if sentences else ""
+                ngram_groups[str(n)][ngram] = {
+                    "ngram": ngram,
+                    "count": count,
+                    "chosen_text": chosen_text,
+                } 
     for n, groups in ngram_groups.items():
         for ngram in groups:
             ngrams_to_n[ngram] = n
-    print(ngrams_to_n)
+    print(ngram_groups[str(1)].values())
+    
 
 load()
 

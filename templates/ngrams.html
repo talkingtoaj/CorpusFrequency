@@ -1,9 +1,14 @@
 {% extends "nav.html" %}
 {% block content %}
 {% for element in list %}
+
     <div>
-        <input type="checkbox" {{'checked' if element.chosen_text != '' else ''}}><a href="{{ '/sentences/'+ element.ngram}}">{{element.ngram}} - {{element.count}}</a></li>
+        <input type="checkbox" class="checkbox">
+        <a href="{{ '/sentences/'+ element.ngram }}" class="ngram-link">{{element.ngram}} - {{element.count}}</a>
+        
     </div>
 {% endfor %}
+<script src="{{ url_for('static', filename='script.js')}}"></script>
+
 {% endblock %}
 
