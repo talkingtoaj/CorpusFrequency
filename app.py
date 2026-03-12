@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, make_response
+from flask import Flask, render_template, request, make_response, jsonify
 from get_ngrams import results
 from find_sentences import search
 import pickle, csv, io, os, time
@@ -75,6 +75,20 @@ def clear():
         os.remove(STATE_FILE)
     load()
     return ""
+@app.route("/api/ngram-groups")
+def get_ngram_groups():
+    #convert int64 to int for json serialization
+    converted_group = {}
+    for n, group in ngram_groups.items():
+        converted_group[n] = {}
+        for ngram, value in group.items():
+            converted_group[n][ngram] = {
+                "ngram": value["ngram"],
+                "count": int(value["count"]),
+                "chosen_text": value["chosen_text"],
+            }   
+        
+    return jsonify(converted_group)
 
 
 

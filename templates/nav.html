@@ -5,7 +5,7 @@
 <a href="/export"><button>Export</button></a>
 <button onclick="triggerClear()" style="margin-left: 100px;">Clear</button>
 
-<script>
+<script src="/static/fetch_ngrams.js">
     function triggerClear() {
         var xhr = new XMLHttpRequest()
         xhr.open('POST', '/clear', false)
@@ -13,6 +13,7 @@
         xhr.send()
         location.reload()
     }
+
 </script>
 
 {% block content %}{% endblock %}

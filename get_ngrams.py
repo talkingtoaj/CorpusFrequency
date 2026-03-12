@@ -1,6 +1,7 @@
 from sklearn.feature_extraction.text import CountVectorizer
 import read
 import nltk, read
+from alphabet_conversion import convert_to_lower_case
 nltk.download("punkt")
 
 file_contents = []
@@ -28,13 +29,15 @@ for n in range(1,7):
     for pair in result_pairs:
         title = pair[0]
         freq = pair[1]
-        if result_dict.get(title.lower()) is None:
+        converted_title = convert_to_lower_case(title)
+        if result_dict.get(converted_title) is None:
             # store the non-lowercase version with frequency
-            result_dict[pair[0].lower()] = pair
+            result_dict[converted_title] = pair
         else:
             # add the frequency
-            original_title = result_dict[pair[0].lower()][0]
-            original_freq = result_dict[pair[0].lower()][1]
-            result_dict[pair[0].lower()] = (original_title, original_freq + freq)
+            original_title = result_dict[converted_title][0]
+            original_freq = result_dict[converted_title][1]
+            result_dict[converted_title] = (original_title, original_freq + freq)
 
     results[str(n)] = sorted([pair for pair in result_dict.values() if pair[1] >=4], key=lambda pair: -pair[1])
+    

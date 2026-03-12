@@ -9,7 +9,7 @@
     <li>{{ result.fileName }} {{ result.markup_sentence | safe}}</li>
 {% endfor %}
 
-<script>
+<script src="/static/fetch_ngrams.js">
     function saveText(sentence) {
         var xhr = new XMLHttpRequest()
         xhr.open('POST', '/save-text')
