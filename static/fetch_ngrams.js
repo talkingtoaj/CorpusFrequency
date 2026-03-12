@@ -32,6 +32,21 @@ async function fetchNgramsGroups() {
            
         });
     });
+    // Sort checkboxes: unchecked on top and checked below 
+    const allCheckboxDivs = document.querySelectorAll("input[type='checkbox']");
+    const divElements = Array.from(allCheckboxDivs).map(cb => cb.parentElement);
+
+
+    //Sort: unchecked (false) comes before checked 
+    divElements.sort((a,b)=>{
+        const aChecked = a.querySelector("input[type='checkbox']").checked;
+        const bChecked = b.querySelector("input[type='checkbox']").checked
+        return aChecked - bChecked //false(0) comes before true(1)
+    })
+
+    //Re-append sorted divs to the parent in new order 
+    const parent = divElements[0].parentElement;
+    divElements.forEach(div => parent.appendChild(div))
     }catch(error){
         console.error("Error fetching ngram groups:", error);
     }
