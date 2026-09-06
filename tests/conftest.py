@@ -1,5 +1,13 @@
+import os
+
 import pytest
 from django.contrib.auth import get_user_model
+
+# Playwright's synchronous API runs an event loop on the calling thread, so
+# Django's async-safety guard rejects ORM calls made from a test that drives
+# a browser. The guard exists to stop blocking a production event loop;
+# inside the test process there is none to block.
+os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
 from corpus.models import Corpus
 from corpus.services import ngrams as ngram_service

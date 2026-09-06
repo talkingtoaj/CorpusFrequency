@@ -28,4 +28,9 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 testpaths = ["tests"]
-filterwarnings = ["ignore::DeprecationWarning:pkg_resources"]
+filterwarnings = [
+    "ignore::DeprecationWarning:pkg_resources",
+    # whitenoise warns that STATIC_ROOT has no collectstatic output; tests
+    # serve static files straight from the source tree.
+    "ignore:No directory at:UserWarning",
+]
