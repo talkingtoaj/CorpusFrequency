@@ -16,12 +16,28 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-key-do-not-deploy
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# Cloud Run sets K_SERVICE for services and CLOUD_RUN_JOB for jobs. Both
+# matter: the migration job needs the same Cloud SQL socket rewrite as the
+# service, and checking only K_SERVICE would silently skip it there.
+ON_CLOUD_RUN = bool(os.environ.get("K_SERVICE") or os.environ.get("CLOUD_RUN_JOB"))
 
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
+if ON_CLOUD_RUN:
+    # Safe to wildcard: ALLOWED_HOSTS only validates the Host header, and the
+    # service URL is not known until after the first deploy.
+    ALLOWED_HOSTS += [".run.app", ".a.run.app"]
+
+# Never wildcard this one. CSRF_TRUSTED_ORIGINS governs which origins may make
+# authenticated requests, so 'https://*.run.app' would trust every Cloud Run
+# service on the platform, including other people's.
 CSRF_TRUSTED_ORIGINS = [
-    origin
+    origin.strip()
     for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin
+    if origin.strip()
 ]
 
 INSTALLED_APPS = [
@@ -90,6 +106,16 @@ DATABASES = {
     )
 }
 
+# Cloud Run reaches Cloud SQL over a Unix socket, not TCP, so the same
+# DATABASE_URL that works locally fails there with "connection refused".
+# Rewriting the host here means one secret serves both environments.
+CLOUD_SQL_INSTANCE = os.environ.get("CLOUD_SQL_INSTANCE", "")
+if ON_CLOUD_RUN and CLOUD_SQL_INSTANCE:
+    database = DATABASES["default"]
+    if not str(database.get("HOST", "")).startswith("/cloudsql/"):
+        database["HOST"] = f"/cloudsql/{CLOUD_SQL_INSTANCE}"
+        database.pop("PORT", None)
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -111,6 +137,29 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Django's default configuration routes request errors to mail_admins only,
+# so with DEBUG off and no mail configured a 500 leaves nothing behind but an
+# access-log line. Cloud Run collects stdout into Cloud Logging, so send
+# tracebacks there.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {"format": "{levelname} {name} {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
 
 LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "corpus-list"
@@ -147,6 +196,10 @@ if not DEBUG:
     # so the scheme has to come from the forwarded header.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SSL_REDIRECT", "1") == "1"
+    # Cloud Run's startup and liveness probes reach the container directly,
+    # without the proxy's X-Forwarded-Proto header, so the SSL redirect would
+    # answer them with a 301 and the probe would read that as a failure.
+    SECURE_REDIRECT_EXEMPT = [r"^health$"]
     SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", 60 * 60 * 24 * 365))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

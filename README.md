@@ -89,6 +89,31 @@ Documents can be added at any point. Re-analysing refreshes the counts and keeps
 Run `uv run python manage.py check --deploy` before going live; it should
 report no issues once `DJANGO_SECRET_KEY` is set to a long random value.
 
+## Deploying
+
+Cloud Run, via Cloud Build:
+
+```
+gcloud builds submit --config cloudbuild.yaml
+```
+
+Build → migrate → deploy. Migrations run as a Cloud Run **job** against the
+image being deployed, never at container startup: startup migrations race
+between concurrent cold starts, and a failed one looks like a crash loop.
+
+Four secrets must exist in Secret Manager before the first build:
+`corpusfrequency-secret-key`, `corpusfrequency-database-url`,
+`corpusfrequency-google-client-id`, `corpusfrequency-google-secret`.
+
+After the first deploy, set `DJANGO_CSRF_TRUSTED_ORIGINS` to the service URL.
+It is not known until the service exists, and it must never be a wildcard —
+`https://*.run.app` would trust every Cloud Run service on the platform.
+
+The Google OAuth client itself has to be created by hand at
+`console.cloud.google.com/auth/clients`; there is no gcloud or API equivalent.
+Register `<service-url>/accounts/google/login/callback/` as an authorised
+redirect URI.
+
 ## Running the tests
 
 ```

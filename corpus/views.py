@@ -17,6 +17,11 @@ from corpus.services.extract import UnsupportedDocument
 from corpus.services.ingest import add_document
 
 
+def health(request):
+    """Liveness probe for Cloud Run. Must not require authentication."""
+    return HttpResponse("ok", content_type="text/plain")
+
+
 def owned(request, pk):
     """Fetch a corpus, 404ing if it is not this user's.
 
