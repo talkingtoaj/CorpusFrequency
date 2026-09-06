@@ -5,6 +5,7 @@ from corpus import views
 urlpatterns = [
     path("", views.corpus_list, name="corpus-list"),
     path("corpus/<int:pk>/", views.corpus_detail, name="corpus-detail"),
+    path("corpus/<int:pk>/edit/", views.corpus_edit, name="corpus-edit"),
     path("corpus/<int:pk>/upload/", views.upload_documents, name="upload-documents"),
     path("corpus/<int:pk>/analyse/", views.analyse, name="analyse"),
     path("corpus/<int:pk>/ngrams/<int:n>/", views.ngram_list, name="ngram-list"),

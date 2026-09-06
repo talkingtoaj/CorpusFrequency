@@ -43,6 +43,18 @@ Then open http://127.0.0.1:8000 and log in.
 5. "Needs a description" lists everything ticked that still has no example sentence.
 6. Export to CSV.
 
+## Ranking by importance rather than frequency
+
+The most frequent words in any corpus are `the` and `and`, which teach a
+learner nothing about the domain. To find the vocabulary that is actually
+characteristic of it, upload a second corpus of general language, mark it as
+a **control**, and set it as the target corpus's "score against" in Settings.
+
+Each n-gram is then scored as the log ratio of its frequency here against its
+frequency in the control, weighted by the log of its count. Positive means
+characteristic of the domain, near zero means general language, negative means
+under-represented. The n-gram lists gain a "By importance" ordering.
+
 Documents can be added at any point. Re-analysing refreshes the counts and keeps every selection and example sentence you have already written.
 
 ## Configuration

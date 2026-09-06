@@ -2,6 +2,7 @@
 {% block title %}{{ corpus.name }}{% endblock %}
 {% block content %}
 <h1>{{ corpus.name }} <span class="muted">{{ corpus.get_kind_display }}</span></h1>
+<p><a href="{% url 'corpus-edit' corpus.pk %}">Settings</a>{% if corpus.control_corpus %} <span class="muted">scored against {{ corpus.control_corpus.name }}</span>{% endif %}</p>
 
 {% if corpus.is_stale %}
   <p class="warning">

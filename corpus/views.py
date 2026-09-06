@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from corpus.forms import CorpusForm, UploadForm
 from corpus.models import MAX_N, Corpus, Ngram
 from corpus.services import ngrams as ngram_service
+from corpus.services import scoring as scoring_service
 from corpus.services import search as search_service
 from corpus.services.extract import UnsupportedDocument
 from corpus.services.ingest import add_document
@@ -108,7 +109,32 @@ def analyse(request, pk):
         "Analysis complete: {created} new, {updated} updated, {removed} dropped. "
         "Existing selections were kept.".format(**result),
     )
+    # Counts have moved, so any importance scores derived from them are now
+    # stale. Rescoring here keeps the two from ever disagreeing.
+    scored = scoring_service.rescore(corpus)
+    if scored["scored"]:
+        messages.success(
+            request,
+            f"Scored {scored['scored']} n-grams against '{corpus.control_corpus.name}'.",
+        )
     return redirect("corpus-detail", pk=corpus.pk)
+
+
+@login_required
+def corpus_edit(request, pk):
+    corpus = owned(request, pk)
+    if request.method == "POST":
+        form = CorpusForm(request.POST, instance=corpus, owner=request.user)
+        if form.is_valid():
+            form.save()
+            # Changing the control corpus changes what importance means, so
+            # never leave the previous ranking in place.
+            scoring_service.rescore(corpus)
+            messages.success(request, "Corpus updated.")
+            return redirect("corpus-detail", pk=corpus.pk)
+    else:
+        form = CorpusForm(instance=corpus, owner=request.user)
+    return render(request, "corpus/corpus_edit.html", {"corpus": corpus, "form": form})
 
 
 @login_required

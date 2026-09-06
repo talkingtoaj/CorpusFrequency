@@ -166,3 +166,40 @@ class TestExport:
         chosen.save()
         body = client_logged_in.get(reverse("export", args=[analysed_corpus.pk])).content.decode()
         assert "Işık" in body
+
+
+class TestScoringViews:
+    """Issue #12 - the control corpus is chosen and applied through the UI."""
+
+    def test_settings_page_of_another_users_corpus_is_404(self, client_logged_in, their_corpus):
+        response = client_logged_in.get(reverse("corpus-edit", args=[their_corpus.pk]))
+        assert response.status_code == 404
+
+    def test_setting_a_control_corpus_scores_immediately(self, client_logged_in, user, analysed_corpus):
+        control = Corpus.objects.create(
+            owner=user, name="Control", kind=Corpus.CONTROL, language="tr"
+        )
+        from corpus.services.ingest import add_document
+
+        add_document(control, "c.txt", ISTANBUL_TEXT.encode("utf-8"))
+
+        client_logged_in.post(
+            reverse("corpus-edit", args=[analysed_corpus.pk]),
+            {
+                "name": analysed_corpus.name,
+                "kind": Corpus.TARGET,
+                "language": "tr",
+                "control_corpus": control.pk,
+            },
+        )
+        analysed_corpus.refresh_from_db()
+        assert analysed_corpus.control_corpus == control
+        assert analysed_corpus.ngrams.exclude(importance=None).exists()
+
+    def test_importance_ordering_hides_unscored_ngrams(self, client_logged_in, analysed_corpus):
+        """Without a control corpus there is nothing to rank by."""
+        response = client_logged_in.get(
+            reverse("ngram-list", args=[analysed_corpus.pk, 1]), {"by": "importance"}
+        )
+        assert response.status_code == 200
+        assert "İstanbul".encode() not in response.content

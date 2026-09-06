@@ -7,12 +7,18 @@ from sklearn.feature_extraction.text import CountVectorizer
 from corpus.models import MAX_N, MIN_FREQUENCY, Ngram, Sentence
 
 
-def count_ngrams(corpus, texts):
+def count_ngrams(corpus, texts, min_frequency=MIN_FREQUENCY):
     """Return {n: {key: (display, count)}} for `texts`.
 
     CountVectorizer runs with lowercase=False so the original casing
     survives for display; folding afterwards is what merges the case
-    variants back together under one key.
+    variants back together under one key. Folding uses `corpus`'s
+    language, which is why scoring passes the *target* corpus when
+    counting a control corpus - both sides have to land in one key space
+    to be comparable.
+
+    `min_frequency` is lowered to 1 by the contrastive scoring, which needs
+    the true totals rather than the visible-n-gram totals.
     """
     counted = {}
     for n in range(1, MAX_N + 1):
@@ -44,7 +50,7 @@ def count_ngrams(corpus, texts):
         # The frequency cut belongs here, after merging. Applied to the raw
         # terms it would discard the case variants that together clear it.
         counted[n] = {
-            key: value for key, value in merged.items() if value[1] >= MIN_FREQUENCY
+            key: value for key, value in merged.items() if value[1] >= min_frequency
         }
     return counted
 
