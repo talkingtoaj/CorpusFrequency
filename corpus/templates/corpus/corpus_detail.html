@@ -1,0 +1,47 @@
+{% extends "corpus/base.html" %}
+{% block title %}{{ corpus.name }}{% endblock %}
+{% block content %}
+<h1>{{ corpus.name }} <span class="muted">{{ corpus.get_kind_display }}</span></h1>
+
+{% if corpus.is_stale %}
+  <p class="warning">
+    Documents have been added since the last analysis. Re-analyse to bring the
+    n-grams up to date &mdash; your selections and example sentences are kept.
+  </p>
+{% endif %}
+
+<h2>N-grams</h2>
+{% if corpus.analysed_at %}
+  <p class="tabs">
+    {% for n, count in counts.items %}
+      <a href="{% url 'ngram-list' corpus.pk n %}">#{{ n }} <span class="muted">{{ count }}</span></a>
+    {% endfor %}
+  </p>
+  <p>
+    <a href="{% url 'needs-description' corpus.pk %}">Needs a description ({{ needs_description_count }})</a>
+    &middot;
+    <a href="{% url 'export' corpus.pk %}">Export CSV</a>
+  </p>
+{% else %}
+  <p class="muted">Not analysed yet.</p>
+{% endif %}
+
+<form method="post" action="{% url 'analyse' corpus.pk %}">
+  {% csrf_token %}
+  <button type="submit">{% if corpus.analysed_at %}Re-analyse{% else %}Analyse{% endif %}</button>
+  {% if corpus.analysed_at %}<span class="muted">last run {{ corpus.analysed_at }}</span>{% endif %}
+</form>
+
+<h2>Documents ({{ documents|length }})</h2>
+{% if documents %}
+  <ul>{% for document in documents %}<li>{{ document.filename }}</li>{% endfor %}</ul>
+{% else %}
+  <p class="muted">No documents yet.</p>
+{% endif %}
+
+<form method="post" action="{% url 'upload-documents' corpus.pk %}" enctype="multipart/form-data" class="stack">
+  {% csrf_token %}
+  {{ upload_form.as_p }}
+  <button type="submit">Upload</button>
+</form>
+{% endblock %}

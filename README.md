@@ -1,42 +1,8 @@
-# Usage
-
-Place the word documents in a folder called 'input_files'
-
-Reads `*.docx`, `*.pdf`, `*.json` and plain text files.
-
-## Requirements
-
-* Python 3.14
-* [uv](https://docs.astral.sh/uv/) for dependency management
-
-## Starting up
-
-* Install dependencies with `uv sync`
-* Remove `output.txt` in the root directory if it exists
-* Add the files you want analysed to the `input_files` folder
-* Run `uv run python app.py` to begin, then open http://127.0.0.1:5000
-
-`output.txt` is the extracted-text cache. It is only regenerated when
-absent, so delete it after changing the contents of `input_files`.
-
-`state` holds your selections and chosen example sentences. The Clear
-button in the UI deletes it.
-
-## Running the tests
-
-```
-uv sync --group dev
-uv run playwright install chromium
-uv run pytest
-```
-
-The browser tests run the real Flask app against the small Turkish corpus
-in `tests/fixtures/input_files`, so no corpus of your own is needed.
-
 # CorpusFrequency
-Analysing the most frequent words and phrases in a corpus
 
-Useful for making a list of the most common vocabulary from a corpus of documents in a particular domain. You can import documents that are a good representation of the content regularly used in a particular domain (e.g. transcripts of online meetings held in English by a particular company). CorpusFrequency will then identify the most common words (1-gram), combinations of 2 words that regularly appear together (2-gram), 3 word combinations (3-gram) etc... 
+Analysing the most frequent words and phrases in a corpus.
+
+Useful for making a list of the most common vocabulary from a corpus of documents in a particular domain. You can import documents that are a good representation of the content regularly used in a particular domain (e.g. transcripts of online meetings held in English by a particular company). CorpusFrequency will then identify the most common words (1-gram), combinations of 2 words that regularly appear together (2-gram), 3 word combinations (3-gram) etc...
 - Examples of the most common 1-grams: and, the, ...
 - Examples of the most common 2-grams: so that, for example
 - Example of the most common 3-grams: in order that ...
@@ -47,5 +13,59 @@ A frequency list is a useful shortcut for language learning in order to quickly 
 
 For each n-gram identified, you are presented with samples of it appearing in context to allow you to provide an illustrative example.
 
+# Running it
+
+A Django application. Each user owns their own corpora; uploaded documents are parsed for text and the original files are not retained.
+
+## Requirements
+
+* Python 3.14
+* [uv](https://docs.astral.sh/uv/) for dependency management
+* PostgreSQL in deployment; SQLite is the default for local work
+
+## Local setup
+
+```
+uv sync
+uv run python manage.py migrate
+uv run python manage.py createsuperuser
+uv run python manage.py runserver
+```
+
+Then open http://127.0.0.1:8000 and log in.
+
+## Using it
+
+1. Create a corpus, choosing its language. `tr` or `az` enable Turkish dotted/dotless i handling; anything else uses the Unicode default.
+2. Upload documents (`.docx`, `.pdf`, `.json`, `.txt`, `.md`, `.csv`).
+3. Analyse. This builds 1- to 6-grams, merging case variants and dropping anything appearing fewer than 4 times.
+4. Work through the n-gram lists, ticking the ones worth keeping and writing an example sentence for each.
+5. "Needs a description" lists everything ticked that still has no example sentence.
+6. Export to CSV.
+
+Documents can be added at any point. Re-analysing refreshes the counts and keeps every selection and example sentence you have already written.
+
+## Configuration
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `DJANGO_SECRET_KEY` | Required in deployment | insecure dev key |
+| `DJANGO_DEBUG` | `1` for local development | `1` |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated | `localhost,127.0.0.1` |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | Comma-separated | empty |
+| `DATABASE_URL` | Postgres connection string | local SQLite |
+| `CORPUS_MAX_UPLOAD_BYTES` | Per-file upload cap | 20 MB |
+
+## Running the tests
+
+```
+uv sync --group dev
+uv run playwright install chromium
+uv run pytest
+```
+
 # Methodology
+
 Scikit learn has a class called CountVectorizer that allows you to process a lot of text and extract the frequency of each ngram. You can them skim off the most frequent ngrams, and you can determine the range of n to search. https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+
+Case variants are merged after counting rather than by lowercasing the input, because `str.lower()` is locale-independent and mangles Turkish: it expands `İ` into two codepoints and maps `I` to dotted `i` rather than dotless `ı`. See `corpus/case_folding.py`.

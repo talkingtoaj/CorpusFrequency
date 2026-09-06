@@ -1,0 +1,20 @@
+{% extends "corpus/base.html" %}
+{% block title %}Needs a description{% endblock %}
+{% block content %}
+<h1><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a> &mdash; needs a description</h1>
+<p class="muted">N-grams you selected but have not written an example sentence for yet.</p>
+
+{% if ngrams %}
+<ul class="ngrams">
+  {% for ngram in ngrams %}
+    <li>
+      <span class="muted">#{{ ngram.n }}</span>
+      <a href="{% url 'ngram-detail' ngram.pk %}">{{ ngram.display }}</a>
+      <span class="muted">{{ ngram.count }}</span>
+    </li>
+  {% endfor %}
+</ul>
+{% else %}
+  <p>Nothing outstanding &mdash; every selected n-gram has an example sentence.</p>
+{% endif %}
+{% endblock %}

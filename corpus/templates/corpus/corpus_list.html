@@ -1,0 +1,30 @@
+{% extends "corpus/base.html" %}
+{% block content %}
+<h1>Your corpora</h1>
+
+{% if corpora %}
+<table>
+  <thead><tr><th>Name</th><th>Kind</th><th>Language</th><th>Documents</th><th>Selected</th></tr></thead>
+  <tbody>
+  {% for corpus in corpora %}
+    <tr>
+      <td><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a></td>
+      <td>{{ corpus.get_kind_display }}</td>
+      <td>{{ corpus.language }}</td>
+      <td>{{ corpus.document_count }}</td>
+      <td>{{ corpus.selected_count }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="muted">No corpora yet. Create one below to get started.</p>
+{% endif %}
+
+<h2>New corpus</h2>
+<form method="post" class="stack">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Create</button>
+</form>
+{% endblock %}
