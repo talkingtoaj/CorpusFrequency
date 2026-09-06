@@ -79,7 +79,8 @@ def upload_documents(request, pk):
     corpus = owned(request, pk)
     form = UploadForm(request.POST, request.FILES)
     if not form.is_valid():
-        messages.error(request, "Choose at least one file to upload.")
+        for error in form.errors.get("files", ["Choose at least one file to upload."]):
+            messages.error(request, error)
         return redirect("corpus-detail", pk=corpus.pk)
 
     added, rejected = 0, []

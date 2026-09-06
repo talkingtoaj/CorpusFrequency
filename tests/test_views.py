@@ -203,3 +203,21 @@ class TestScoringViews:
         )
         assert response.status_code == 200
         assert "İstanbul".encode() not in response.content
+
+
+class TestUploadLimits:
+    def test_oversized_upload_is_rejected(self, client_logged_in, corpus, settings):
+        settings.MAX_UPLOAD_BYTES = 64
+        upload = SimpleUploadedFile("big.txt", b"x" * 200)
+        response = client_logged_in.post(
+            reverse("upload-documents", args=[corpus.pk]), {"files": upload}, follow=True
+        )
+        assert response.status_code == 200
+        assert corpus.documents.count() == 0
+        assert b"upload limit" in response.content
+
+    def test_upload_within_the_limit_is_accepted(self, client_logged_in, corpus, settings):
+        settings.MAX_UPLOAD_BYTES = 10_000
+        upload = SimpleUploadedFile("small.txt", ISTANBUL_TEXT.encode("utf-8"))
+        client_logged_in.post(reverse("upload-documents", args=[corpus.pk]), {"files": upload})
+        assert corpus.documents.count() == 1

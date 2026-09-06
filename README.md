@@ -67,6 +67,11 @@ Documents can be added at any point. Re-analysing refreshes the counts and keeps
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | Comma-separated | empty |
 | `DATABASE_URL` | Postgres connection string | local SQLite |
 | `CORPUS_MAX_UPLOAD_BYTES` | Per-file upload cap | 20 MB |
+| `DJANGO_SSL_REDIRECT` | Redirect HTTP to HTTPS when not in debug | `1` |
+| `DJANGO_HSTS_SECONDS` | HSTS max-age when not in debug | 1 year |
+
+Run `uv run python manage.py check --deploy` before going live; it should
+report no issues once `DJANGO_SECRET_KEY` is set to a long random value.
 
 ## Running the tests
 

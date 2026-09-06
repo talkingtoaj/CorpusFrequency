@@ -1,4 +1,6 @@
 from django import forms
+from django.conf import settings
+from django.template.defaultfilters import filesizeformat
 
 from corpus.models import Corpus
 from corpus.services.extract import SUPPORTED_EXTENSIONS
@@ -47,3 +49,19 @@ class UploadForm(forms.Form):
     files = MultipleFileField(
         label=f"Documents ({', '.join(SUPPORTED_EXTENSIONS)})",
     )
+
+    def clean_files(self):
+        """Reject oversized uploads before anything tries to parse them.
+
+        The cap is about parse cost rather than storage - the source file is
+        discarded once its text has been extracted.
+        """
+        files = self.cleaned_data["files"]
+        limit = settings.MAX_UPLOAD_BYTES
+        too_big = [upload.name for upload in files if upload.size > limit]
+        if too_big:
+            raise forms.ValidationError(
+                "%(names)s exceed(s) the %(limit)s upload limit.",
+                params={"names": ", ".join(too_big), "limit": filesizeformat(limit)},
+            )
+        return files

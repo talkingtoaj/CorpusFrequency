@@ -103,6 +103,12 @@ LOGOUT_REDIRECT_URL = "login"
 MAX_UPLOAD_BYTES = int(os.environ.get("CORPUS_MAX_UPLOAD_BYTES", 20 * 1024 * 1024))
 
 if not DEBUG:
+    # Deployed behind a TLS-terminating proxy (Cloud Run, a load balancer),
+    # so the scheme has to come from the forwarded header.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SSL_REDIRECT", "1") == "1"
+    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", 60 * 60 * 24 * 365))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
