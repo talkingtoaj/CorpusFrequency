@@ -1,14 +1,23 @@
 [project]
 name = "corpusfrequency"
 version = "0.1.0"
-description = "Add your description here"
+description = "Analyse the most frequent words and phrases in a corpus of documents"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "docx2txt>=0.9",
     "flask>=3.1.2",
     "nltk>=3.9.2",
-    "pylint>=4.0.4",
     "scikit-learn>=1.8.0",
     "tika>=3.1.0",
 ]
+
+[dependency-groups]
+dev = [
+    "playwright>=1.49.0",
+    "pylint>=4.0.4",
+    "pytest>=8.3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

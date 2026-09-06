@@ -1,28 +1,20 @@
-const checkboxes = document.querySelectorAll('.checkbox');
+// Persist checkbox state. The checkbox marks an n-gram as one the user wants
+// to keep; that is deliberately independent of whether an example sentence
+// has been chosen for it yet, so the two can be filled in in either order.
+document.querySelectorAll('.ngram-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', event => {
+        const ngram = checkbox.dataset.ngram
+        const selected = event.target.checked
 
-checkboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', (event) => {
-        // Get the ngram-link that's a sibling of this checkbox
-        const ngramLink = checkbox.nextElementSibling;
-        const ngramText = ngramLink.textContent.split(' - ')[0]; // Extract just the ngram
-        
-        // Get or create the paragraph element
-        let ngramSentence = ngramLink.nextElementSibling;
-        
-        if (event.target.checked) {
-            // Create the paragraph if it doesn't exist
-            if (!ngramSentence || ngramSentence.tagName !== 'P') {
-                ngramSentence = document.createElement("p");
-                ngramSentence.textContent = `Sentences containing ${ngramText} will be displayed here.`;
-                ngramLink.parentElement.appendChild(ngramSentence);
-            } else {
-                ngramSentence.style.display = 'block';
-            }
-        } else {
-            // Hide the paragraph instead of removing it
-            if (ngramSentence && ngramSentence.tagName === 'P') {
-                ngramSentence.style.display = 'none';
-            }
-        }
-    });
-});
+        const body = new URLSearchParams({ ngram: ngram, selected: selected })
+        fetch('/toggle-selected', {
+            method: 'POST',
+            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+            body: body,
+        }).catch(() => {
+            // Roll the checkbox back so it never shows state the server
+            // did not actually record.
+            event.target.checked = !selected
+        })
+    })
+})

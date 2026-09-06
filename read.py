@@ -3,8 +3,8 @@ import json
 from unpack_json import json_unpack
 from tika import parser
 
-FOLDER = "input_files"
-FILE_NAME = "output.txt"
+FOLDER = os.environ.get("CORPUS_INPUT_FOLDER", "input_files")
+FILE_NAME = os.environ.get("CORPUS_OUTPUT_FILE", "output.txt")
 
 if os.path.isfile(FILE_NAME):
     print(f"not regenerating '{FILE_NAME}' as it already exists")
@@ -25,7 +25,7 @@ else:
             text = pdf["content"]
         # otherwise 
         else:
-            with open(entry.path, 'r') as f:
+            with open(entry.path, 'r', encoding='utf-8') as f:
                 text = f.read()
 
         text = text.replace("\n", "   ")

@@ -1,6 +1,7 @@
 # sensitive information
-input_files
-output.txt
+/input_files
+/output.txt
+/state
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

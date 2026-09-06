@@ -1,14 +1,37 @@
 # Usage
+
 Place the word documents in a folder called 'input_files'
 
-Only reads *.docx files.
+Reads `*.docx`, `*.pdf`, `*.json` and plain text files.
+
+## Requirements
+
+* Python 3.14
+* [uv](https://docs.astral.sh/uv/) for dependency management
 
 ## Starting up
-* Install the pipfile dependencies by using pipenv
-* Remove output.txt in root directory if it exists
-* Add the files you want to be analysed in the input_files folder (remove the SAMPLE.docx file in there currently)
-* run `python app.py` to being
 
+* Install dependencies with `uv sync`
+* Remove `output.txt` in the root directory if it exists
+* Add the files you want analysed to the `input_files` folder
+* Run `uv run python app.py` to begin, then open http://127.0.0.1:5000
+
+`output.txt` is the extracted-text cache. It is only regenerated when
+absent, so delete it after changing the contents of `input_files`.
+
+`state` holds your selections and chosen example sentences. The Clear
+button in the UI deletes it.
+
+## Running the tests
+
+```
+uv sync --group dev
+uv run playwright install chromium
+uv run pytest
+```
+
+The browser tests run the real Flask app against the small Turkish corpus
+in `tests/fixtures/input_files`, so no corpus of your own is needed.
 
 # CorpusFrequency
 Analysing the most frequent words and phrases in a corpus
