@@ -32,7 +32,21 @@ uv run python manage.py createsuperuser
 uv run python manage.py runserver
 ```
 
-Then open http://127.0.0.1:8000 and log in.
+Then open http://127.0.0.1:8000.
+
+## Signing in
+
+Sign-in is Google only. Any Google account works; an account is created on
+first arrival, so there is no separate registration step and no password for
+the service to store, verify or reset.
+
+Set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_SECRET` from a Google Cloud
+OAuth client, with `<your-host>/accounts/google/login/callback/` registered as
+an authorised redirect URI. Without them the sign-in button will not complete.
+
+The Django admin at `/admin/` keeps its own username and password form, so a
+`createsuperuser` account can still get in if the OAuth configuration
+breaks.
 
 ## Using it
 
@@ -67,6 +81,8 @@ Documents can be added at any point. Re-analysing refreshes the counts and keeps
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | Comma-separated | empty |
 | `DATABASE_URL` | Postgres connection string | local SQLite |
 | `CORPUS_MAX_UPLOAD_BYTES` | Per-file upload cap | 20 MB |
+| `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth client ID | empty |
+| `GOOGLE_OAUTH_SECRET` | Google OAuth client secret | empty |
 | `DJANGO_SSL_REDIRECT` | Redirect HTTP to HTTPS when not in debug | `1` |
 | `DJANGO_HSTS_SECONDS` | HSTS max-age when not in debug | 1 year |
 

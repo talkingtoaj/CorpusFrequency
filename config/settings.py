@@ -31,8 +31,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "corpus",
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -43,6 +50,14 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    # Kept so `createsuperuser` accounts can still reach /admin/ if the
+    # OAuth configuration ever breaks.
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -50,7 +65,10 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Project-level templates win over app ones, which is how the
+        # allauth sign-in page is overridden - allauth is listed ahead of
+        # `corpus` in INSTALLED_APPS, so an app-level override would lose.
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -94,9 +112,31 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LOGIN_URL = "login"
+LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "corpus-list"
-LOGOUT_REDIRECT_URL = "login"
+LOGOUT_REDIRECT_URL = "account_login"
+
+# Sign-in is Google only. Any Google account may sign in and an account is
+# created on first arrival - there is no separate registration step, and no
+# password for us to store or reset.
+SOCIALACCOUNT_ONLY = True
+ACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+# Skip allauth's "continue with Google?" interstitial; the button on our
+# login page is already the confirmation.
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": os.environ.get("GOOGLE_OAUTH_CLIENT_ID", ""),
+            "secret": os.environ.get("GOOGLE_OAUTH_SECRET", ""),
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+}
 
 # Uploaded documents are parsed and discarded; only extracted text is kept,
 # so this cap is about parse cost rather than storage.

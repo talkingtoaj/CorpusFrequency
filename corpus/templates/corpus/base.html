@@ -12,7 +12,7 @@
     {% if user.is_authenticated %}
       <span class="spacer"></span>
       <span class="muted">{{ user.get_username }}</span>
-      <form method="post" action="{% url 'logout' %}" class="inline">
+      <form method="post" action="{% url 'account_logout' %}" class="inline">
         {% csrf_token %}<button type="submit" class="link">Log out</button>
       </form>
     {% endif %}

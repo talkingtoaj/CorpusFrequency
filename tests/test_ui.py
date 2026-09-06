@@ -8,20 +8,26 @@ but fired no request, so it looked interactive while persisting nothing.
 
 import pathlib
 import tempfile
+from importlib import import_module
 
 import pytest
+from django.conf import settings
+from django.contrib.auth import (
+    BACKEND_SESSION_KEY,
+    HASH_SESSION_KEY,
+    SESSION_KEY,
+    get_user_model,
+)
 
 from corpus.models import Corpus
 from tests.samples import ISIK_TEXT, ISTANBUL_TEXT
 
 playwright_api = pytest.importorskip("playwright.sync_api")
 
-PASSWORD = "corpus-browser-pass"
-
 
 @pytest.fixture
 def browser_user(transactional_db, django_user_model):
-    return django_user_model.objects.create_user("ayse", password=PASSWORD)
+    return django_user_model.objects.create_user("ayse")
 
 
 @pytest.fixture
@@ -46,16 +52,49 @@ def page(live_server):
         browser.close()
 
 
-def login(page, live_server):
-    page.goto(f"{live_server.url}/accounts/login/")
-    page.fill("#id_username", "ayse")
-    page.fill("#id_password", PASSWORD)
-    page.click("button[type=submit]")
+def login(page, live_server, user=None):
+    """Sign a user in without a round trip to Google.
+
+    Sign-in is Google-only, so there is no password form to drive and no
+    way to authenticate in-process against the real provider. Building the
+    session directly is what the app itself ends up with after a successful
+    OAuth callback, so everything downstream is exercised as normal.
+    """
+    if user is None:
+        user = get_user_model().objects.get(username="ayse")
+    engine = import_module(settings.SESSION_ENGINE)
+    session = engine.SessionStore()
+    session[SESSION_KEY] = str(user.pk)
+    session[BACKEND_SESSION_KEY] = "django.contrib.auth.backends.ModelBackend"
+    session[HASH_SESSION_KEY] = user.get_session_auth_hash()
+    session.save()
+    page.context.add_cookies(
+        [
+            {
+                "name": settings.SESSION_COOKIE_NAME,
+                "value": session.session_key,
+                "url": live_server.url,
+            }
+        ]
+    )
 
 
 def test_login_lands_on_the_corpus_list(page, live_server, browser_user):
     login(page, live_server)
+    page.goto(live_server.url)
     assert page.locator("h1", has_text="Your corpora").count() == 1
+
+
+def test_signed_out_visitors_are_sent_to_the_sign_in_page(page, live_server, transactional_db):
+    page.goto(live_server.url)
+    assert page.locator("h1", has_text="Sign in").count() == 1
+
+
+def test_sign_in_page_offers_google_and_no_password_form(page, live_server, transactional_db):
+    """Sign-in is Google-only: there is no password for us to store."""
+    page.goto(f"{live_server.url}/accounts/login/")
+    assert page.locator('a:has-text("Sign in with Google")').count() == 1
+    assert page.locator('input[type="password"]').count() == 0
 
 
 def test_ngram_list_shows_the_merged_turkish_ngram(page, live_server, browser_corpus):
@@ -121,6 +160,7 @@ def test_sentences_are_listed_with_the_match_highlighted(page, live_server, brow
 def test_uploading_a_document_and_analysing_produces_ngrams(page, live_server, browser_user):
     """Issue #13 - documents arrive through the browser, not a folder."""
     login(page, live_server)
+    page.goto(live_server.url)
     page.fill("#id_name", "Uploaded")
     page.fill("#id_language", "tr")
     page.click('button:has-text("Create")')
@@ -138,12 +178,8 @@ def test_uploading_a_document_and_analysing_produces_ngrams(page, live_server, b
 
 def test_another_users_corpus_is_not_reachable(page, live_server, browser_corpus, django_user_model):
     """Multi-user isolation, exercised through the browser."""
-    django_user_model.objects.create_user("mehmet", password=PASSWORD)
-    page.goto(f"{live_server.url}/accounts/login/")
-    page.fill("#id_username", "mehmet")
-    page.fill("#id_password", PASSWORD)
-    page.click("button[type=submit]")
-
+    intruder = django_user_model.objects.create_user("mehmet")
+    login(page, live_server, intruder)
     response = page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/")
     assert response.status == 404
 

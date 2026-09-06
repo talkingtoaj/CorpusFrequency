@@ -19,7 +19,7 @@ class TestAuthentication:
     def test_corpus_list_requires_login(self, client):
         response = client.get(reverse("corpus-list"))
         assert response.status_code == 302
-        assert reverse("login") in response.url
+        assert reverse("account_login") in response.url
 
     def test_logged_in_user_sees_their_list(self, client_logged_in):
         assert client_logged_in.get(reverse("corpus-list")).status_code == 200
