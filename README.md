@@ -39,7 +39,7 @@ Then open http://127.0.0.1:8000 and log in.
 1. Create a corpus, choosing its language. `tr` or `az` enable Turkish dotted/dotless i handling; anything else uses the Unicode default.
 2. Upload documents (`.docx`, `.pdf`, `.json`, `.txt`, `.md`, `.csv`).
 3. Analyse. This builds 1- to 6-grams, merging case variants and dropping anything appearing fewer than 4 times.
-4. Work through the n-gram lists, ticking the ones worth keeping and writing an example sentence for each.
+4. Work through the n-gram lists, ticking the ones worth keeping and writing an example sentence for each. The lists are paged, with a filter box that folds your query to the corpus language &mdash; searching `İSTANBUL` finds the n-gram stored as `istanbul`.
 5. "Needs a description" lists everything ticked that still has no example sentence.
 6. Export to CSV.
 

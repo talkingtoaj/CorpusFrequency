@@ -146,3 +146,16 @@ def test_another_users_corpus_is_not_reachable(page, live_server, browser_corpus
 
     response = page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/")
     assert response.status == 404
+
+
+def test_filter_box_narrows_the_list(page, live_server, browser_corpus):
+    """Filtering folds the query, so an all-caps Turkish search still hits."""
+    login(page, live_server)
+    page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/ngrams/1/")
+    assert page.locator(".ngrams li").count() > 1
+
+    page.fill('input[name="q"]', "İSTANBUL")
+    page.click('button:has-text("Filter")')
+
+    assert page.locator(".ngrams li").count() == 1
+    assert page.locator(".ngrams li").first.inner_text().find("İstanbul") != -1

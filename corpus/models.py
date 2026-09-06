@@ -7,6 +7,10 @@ from corpus.case_folding import convert_to_lower_case, fold_preserving_length
 # navigation need to agree on it.
 MAX_N = 6
 
+# How many n-grams to show per page. A corpus of any size produces tens of
+# thousands of them, which is far too many to put in one document.
+PAGE_SIZE = 100
+
 # n-grams occurring fewer times than this are noise. Applied only after
 # case variants have been merged - filtering earlier throws away exactly
 # the split n-grams the folding exists to recombine.

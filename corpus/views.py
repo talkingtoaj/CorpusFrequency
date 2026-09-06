@@ -2,13 +2,14 @@ import csv
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from corpus.forms import CorpusForm, UploadForm
-from corpus.models import MAX_N, Corpus, Ngram
+from corpus.models import MAX_N, PAGE_SIZE, Corpus, Ngram
 from corpus.services import ngrams as ngram_service
 from corpus.services import scoring as scoring_service
 from corpus.services import search as search_service
@@ -138,21 +139,46 @@ def corpus_edit(request, pk):
     return render(request, "corpus/corpus_edit.html", {"corpus": corpus, "form": form})
 
 
+def filtered(corpus, entries, query):
+    """Narrow `entries` to n-grams containing `query`.
+
+    The query is folded with the corpus's language before matching, so
+    searching 'istanbul', 'İstanbul' or 'İSTANBUL' all find the same
+    n-gram. A database-level case-insensitive match could not do this - it
+    does not know that Turkish 'I' lowercases to dotless 'ı'.
+    """
+    if not query:
+        return entries
+    return entries.filter(key__contains=corpus.fold(query))
+
+
+def paginate(request, entries):
+    """Page `entries`, clamping an out-of-range page rather than 404ing."""
+    paginator = Paginator(entries, PAGE_SIZE)
+    return paginator.get_page(request.GET.get("page"))
+
+
 @login_required
 def ngram_list(request, pk, n):
     corpus = owned(request, pk)
     ordering = "-importance" if request.GET.get("by") == "importance" else "-count"
+    query = request.GET.get("q", "").strip()
+
     entries = corpus.ngrams.filter(n=n)
     if ordering == "-importance":
         entries = entries.exclude(importance=None)
+    entries = filtered(corpus, entries, query).order_by(ordering, "key")
+
     return render(
         request,
         "corpus/ngram_list.html",
         {
             "corpus": corpus,
             "n": n,
-            "ngrams": entries.order_by(ordering, "key"),
+            "page_obj": paginate(request, entries),
+            "total": entries.count(),
             "ordering": ordering,
+            "query": query,
         },
     )
 
@@ -200,12 +226,18 @@ def save_text(request, pk):
 def needs_description(request, pk):
     """Issue #8: selections that still have no example sentence."""
     corpus = owned(request, pk)
+    query = request.GET.get("q", "").strip()
+    entries = filtered(
+        corpus, corpus.ngrams.filter(selected=True, chosen_text=""), query
+    ).order_by("n", "-count")
     return render(
         request,
         "corpus/needs_description.html",
         {
             "corpus": corpus,
-            "ngrams": corpus.ngrams.filter(selected=True, chosen_text="").order_by("n", "-count"),
+            "page_obj": paginate(request, entries),
+            "total": entries.count(),
+            "query": query,
         },
     )
 
