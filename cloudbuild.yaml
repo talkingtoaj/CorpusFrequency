@@ -1,0 +1,75 @@
+# Build, migrate, then deploy. Migrations run as a Cloud Run job against the
+# image being deployed, never at container startup: startup migrations race
+# between concurrent cold starts and make a failed migration look like a
+# crash loop.
+
+substitutions:
+  # Overridden per build with the git short sha. Defaulted so that a manual
+  # `gcloud builds submit` without --substitutions still produces a valid
+  # image tag; SHORT_SHA is only populated by build triggers.
+  _TAG: manual
+  _SERVICE: corpusfrequency
+  _REGION: us-central1
+  _INSTANCE: lb-db2
+  # One line, no spaces after the commas - gcloud parses this as a literal
+  # comma-separated list and will not strip whitespace around the entries.
+  _SECRETS: "DJANGO_SECRET_KEY=corpusfrequency-secret-key:latest,DATABASE_URL=corpusfrequency-database-url:latest,GOOGLE_OAUTH_CLIENT_ID=corpusfrequency-google-client-id:latest,GOOGLE_OAUTH_SECRET=corpusfrequency-google-secret:latest"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:${_TAG}"
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - "--tag=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:${_TAG}"
+      - "--tag=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:latest"
+      - "--cache-from=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:latest"
+      - "."
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "--all-tags", "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}"]
+
+  - id: migrate
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - deploy
+      - "${_SERVICE}-migrate"
+      - "--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:${_TAG}"
+      - "--region=${_REGION}"
+      - "--set-cloudsql-instances=$PROJECT_ID:${_REGION}:${_INSTANCE}"
+      - "--set-env-vars=DJANGO_DEBUG=0,CLOUD_SQL_INSTANCE=$PROJECT_ID:${_REGION}:${_INSTANCE}"
+      - "--set-secrets=${_SECRETS}"
+      - "--command=python"
+      - "--args=manage.py,migrate,--noinput"
+      - "--execute-now"
+      - "--wait"
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - "${_SERVICE}"
+      - "--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:${_TAG}"
+      - "--region=${_REGION}"
+      - "--platform=managed"
+      - "--allow-unauthenticated"
+      - "--add-cloudsql-instances=$PROJECT_ID:${_REGION}:${_INSTANCE}"
+      - "--set-env-vars=DJANGO_DEBUG=0,CLOUD_SQL_INSTANCE=$PROJECT_ID:${_REGION}:${_INSTANCE}"
+      - "--set-secrets=${_SECRETS}"
+      - "--min-instances=0"
+      - "--max-instances=4"
+      - "--memory=1Gi"
+      - "--cpu=1"
+      - "--timeout=300"

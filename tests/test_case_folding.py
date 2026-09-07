@@ -8,7 +8,7 @@ import unicodedata
 
 import pytest
 
-from case_folding import convert_to_lower_case, fold_preserving_length
+from corpus.case_folding import convert_to_lower_case, fold_preserving_length
 
 
 def test_dotted_capital_i_folds_to_a_single_codepoint():

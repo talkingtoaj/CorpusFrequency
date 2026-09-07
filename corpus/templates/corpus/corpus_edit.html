@@ -1,0 +1,14 @@
+{% extends "corpus/base.html" %}
+{% block title %}{{ corpus.name }} settings{% endblock %}
+{% block content %}
+<h1><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a> &mdash; settings</h1>
+<p class="muted">
+  Choosing a control corpus ranks this corpus's n-grams by how characteristic
+  they are of it, rather than by raw frequency. Saving re-scores immediately.
+</p>
+<form method="post" class="stack">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
