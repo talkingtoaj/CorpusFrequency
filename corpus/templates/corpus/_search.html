@@ -1,6 +1,7 @@
-<form method="get" class="search">
+<form method="get" class="search" role="search">
   {% if ordering == '-importance' %}<input type="hidden" name="by" value="importance">{% endif %}
-  <input type="search" name="q" value="{{ query }}" placeholder="Filter n-grams&hellip;" aria-label="Filter n-grams">
+  <input type="search" id="filter-input" name="q" value="{{ query }}"
+         placeholder="Filter n-grams&hellip;" aria-label="Filter n-grams">
   <button type="submit">Filter</button>
-  {% if query %}<a href="{% querystring q=None page=None %}">clear</a>{% endif %}
+  {% if query %}<a class="link" href="{% querystring q=None page=None %}">clear</a>{% endif %}
 </form>

@@ -1,42 +1,116 @@
 {% extends "corpus/base.html" %}
-{% load static %}
 {% block title %}{{ corpus.name }} &mdash; {{ n }}-grams{% endblock %}
-{% block content %}
-<h1><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a> &mdash; {{ n }}-grams</h1>
 
-<p class="tabs">
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <div class="breadcrumbs__inner">
+    <a href="{% url 'corpus-list' %}">Corpora</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <span aria-current="page">{{ n }}-gram{{ n|pluralize }}</span>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <h1>{{ n }}-gram{{ n|pluralize }}</h1>
+  <p>
+    Tick the ones worth keeping, then open each to add an example sentence.
+    Selections save as you go.
+  </p>
+</div>
+
+<nav class="tabs">
   <a href="{% querystring by=None page=None %}" {% if ordering == '-count' %}class="current"{% endif %}>By frequency</a>
   <a href="{% querystring by='importance' page=None %}" {% if ordering == '-importance' %}class="current"{% endif %}>By importance</a>
-</p>
+</nav>
 
 {% include "corpus/_search.html" %}
 
-<p class="muted">
-  {{ total }} n-gram{{ total|pluralize }}{% if query %} matching &ldquo;{{ query }}&rdquo;{% endif %}
-</p>
+<div class="result-summary">
+  <span>
+    {{ total }} n-gram{{ total|pluralize }}{% if query %} matching &ldquo;{{ query }}&rdquo;{% endif %}
+  </span>
+  {% if page_obj.object_list %}
+    <span class="hint">
+      <kbd>j</kbd><kbd>k</kbd> move
+      <kbd>space</kbd> keep
+      <kbd>enter</kbd> open
+      <kbd>/</kbd> filter
+    </span>
+  {% endif %}
+</div>
 
-{% if not page_obj.object_list %}
-  <p class="muted">
-    Nothing to show.
-    {% if ordering == '-importance' and not query %}Set a control corpus in Settings and re-analyse to score importance.{% endif %}
-  </p>
+{% if page_obj.object_list %}
+  <div class="table-wrap">
+    <table class="ngrams">
+      <thead>
+        <tr>
+          <th scope="col"><span class="subtle">Keep</span></th>
+          <th scope="col">N-gram</th>
+          <th scope="col" class="right">Count</th>
+          <th scope="col" class="importance" title="How characteristic this n-gram is of this corpus compared with its control. Right of centre is distinctive; left is commoner in the control.">Importance</th>
+          <th scope="col">Example</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for ngram in page_obj %}
+        <tr class="ngram-row" data-href="{% url 'ngram-detail' ngram.pk %}">
+          <td class="select">
+            <label class="check">
+              <input type="checkbox" class="ngram-checkbox"
+                     data-url="{% url 'toggle-selected' ngram.pk %}"
+                     data-ngram="{{ ngram.display }}"
+                     aria-label="Keep &ldquo;{{ ngram.display }}&rdquo;"
+                     {% if ngram.selected %}checked{% endif %}>
+            </label>
+          </td>
+          <td>
+            <a class="ngram-term" href="{% url 'ngram-detail' ngram.pk %}">{{ ngram.display }}</a>
+          </td>
+          <td class="right count num">{{ ngram.count }}</td>
+          <td class="importance">
+            {% if ngram.importance is not None %}
+              <span class="bar">
+                <span class="bar__track">
+                  <span class="bar__fill {% if ngram.bar_negative %}bar__fill--neg{% else %}bar__fill--pos{% endif %}"
+                        style="width: {{ ngram.bar_width }}%"></span>
+                </span>
+                <span class="bar__value">{{ ngram.importance|floatformat:2 }}</span>
+              </span>
+            {% else %}
+              <span class="subtle">&mdash;</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ngram.chosen_text %}
+              <span class="badge badge-success" title="{{ ngram.chosen_text }}">example</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "corpus/_pagination.html" %}
+{% else %}
+  <div class="empty">
+    <h2>Nothing to show</h2>
+    {% if query %}
+      <p>No {{ n }}-gram matches &ldquo;{{ query }}&rdquo;.</p>
+    {% elif ordering == '-importance' and not scored %}
+      <p>
+        Importance needs a control corpus to compare against. Choose one in
+        <a href="{% url 'corpus-edit' corpus.pk %}">Settings</a> and re-analyse.
+      </p>
+    {% else %}
+      <p>This corpus has no {{ n }}-grams above the frequency threshold.</p>
+    {% endif %}
+  </div>
 {% endif %}
 
-<ul class="ngrams">
-{% for ngram in page_obj %}
-  <li>
-    <input type="checkbox" class="ngram-checkbox" data-url="{% url 'toggle-selected' ngram.pk %}"
-           data-ngram="{{ ngram.display }}" {% if ngram.selected %}checked{% endif %}>
-    <a href="{% url 'ngram-detail' ngram.pk %}">{{ ngram.display }}</a>
-    <span class="muted">{{ ngram.count }}{% if ngram.importance is not None %} &middot; {{ ngram.importance|floatformat:2 }}{% endif %}</span>
-    {% if ngram.chosen_text %}<span class="tick" title="{{ ngram.chosen_text }}">has example</span>{% endif %}
-  </li>
-{% endfor %}
-</ul>
-
-{% include "corpus/_pagination.html" %}
-{% endblock %}
-{% block scripts %}
-<form id="csrf-holder" hidden>{% csrf_token %}</form>
-<script src="{% static 'script.js' %}"></script>
 {% endblock %}

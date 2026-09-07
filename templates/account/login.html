@@ -2,10 +2,18 @@
 {% load socialaccount %}
 {% block title %}Sign in{% endblock %}
 {% block content %}
-<h1>Sign in</h1>
-<p class="muted">
-  CorpusFrequency uses your Google account to sign in. Any Google account
-  works &mdash; there is nothing to register, and no password to remember.
-</p>
-<p><a class="button" href="{% provider_login_url 'google' process='login' %}">Sign in with Google</a></p>
+<div class="signin">
+  <div class="card">
+    <h1>Sign in</h1>
+    <p>
+      CorpusFrequency uses your Google account. Any Google account works
+      &mdash; there is nothing to register and no password to remember.
+    </p>
+    <p>
+      <a class="button button-primary" href="{% provider_login_url 'google' process='login' %}">
+        Sign in with Google
+      </a>
+    </p>
+  </div>
+</div>
 {% endblock %}

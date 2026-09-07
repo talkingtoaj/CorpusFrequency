@@ -1,26 +1,69 @@
 {% extends "corpus/base.html" %}
-{% block title %}Needs a description{% endblock %}
+{% block title %}{{ corpus.name }} &mdash; needs an example{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <div class="breadcrumbs__inner">
+    <a href="{% url 'corpus-list' %}">Corpora</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <span aria-current="page">Needs an example</span>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
-<h1><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a> &mdash; needs a description</h1>
-<p class="muted">N-grams you selected but have not written an example sentence for yet.</p>
+
+<div class="page-head">
+  <h1>Needs an example</h1>
+  <p>N-grams you have kept but not yet written an example sentence for.</p>
+</div>
 
 {% include "corpus/_search.html" %}
 
 {% if page_obj.object_list %}
-<p class="muted">{{ total }} outstanding{% if query %} matching &ldquo;{{ query }}&rdquo;{% endif %}</p>
-<ul class="ngrams">
-  {% for ngram in page_obj %}
-    <li>
-      <span class="muted">#{{ ngram.n }}</span>
-      <a href="{% url 'ngram-detail' ngram.pk %}">{{ ngram.display }}</a>
-      <span class="muted">{{ ngram.count }}</span>
-    </li>
-  {% endfor %}
-</ul>
-{% include "corpus/_pagination.html" %}
+  <div class="result-summary">
+    <span>{{ total }} outstanding{% if query %} matching &ldquo;{{ query }}&rdquo;{% endif %}</span>
+  </div>
+
+  <div class="table-wrap">
+    <table class="ngrams">
+      <thead>
+        <tr>
+          <th scope="col">Length</th>
+          <th scope="col">N-gram</th>
+          <th scope="col" class="right">Count</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for ngram in page_obj %}
+        <tr>
+          <td><span class="badge">{{ ngram.n }}-gram</span></td>
+          <td><a class="ngram-term" href="{% url 'ngram-detail' ngram.pk %}">{{ ngram.display }}</a></td>
+          <td class="right count num">{{ ngram.count }}</td>
+          <td class="right">
+            <a class="button" href="{% url 'ngram-detail' ngram.pk %}">Add example</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "corpus/_pagination.html" %}
 {% elif query %}
-  <p>Nothing outstanding matches &ldquo;{{ query }}&rdquo;.</p>
+  <div class="empty">
+    <h2>No match</h2>
+    <p>Nothing outstanding matches &ldquo;{{ query }}&rdquo;.</p>
+  </div>
 {% else %}
-  <p>Nothing outstanding &mdash; every selected n-gram has an example sentence.</p>
+  <div class="empty">
+    <h2>Nothing outstanding</h2>
+    <p>Every n-gram you have kept has an example sentence. Ready to export.</p>
+    <p><a class="button" href="{% url 'export' corpus.pk %}">Export CSV</a></p>
+  </div>
 {% endif %}
+
 {% endblock %}

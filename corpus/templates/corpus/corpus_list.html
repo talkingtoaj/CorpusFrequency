@@ -1,30 +1,76 @@
 {% extends "corpus/base.html" %}
 {% block content %}
-<h1>Your corpora</h1>
+
+<div class="page-head">
+  <h1>Your corpora</h1>
+  <p>
+    A <strong>target</strong> corpus is the domain you want vocabulary for. A
+    <strong>control</strong> corpus is general language you score it against,
+    so you find the words that are characteristic of the domain rather than
+    merely common.
+  </p>
+</div>
 
 {% if corpora %}
-<table>
-  <thead><tr><th>Name</th><th>Kind</th><th>Language</th><th>Documents</th><th>Selected</th></tr></thead>
-  <tbody>
-  {% for corpus in corpora %}
-    <tr>
-      <td><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a></td>
-      <td>{{ corpus.get_kind_display }}</td>
-      <td>{{ corpus.language }}</td>
-      <td>{{ corpus.document_count }}</td>
-      <td>{{ corpus.selected_count }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Kind</th>
+          <th scope="col">Language</th>
+          <th scope="col" class="right">Documents</th>
+          <th scope="col" class="right">Selected</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for corpus in corpora %}
+        <tr>
+          <td><a href="{% url 'corpus-detail' corpus.pk %}" class="ngram-term">{{ corpus.name }}</a></td>
+          <td>
+            {% if corpus.kind == 'control' %}
+              <span class="badge">Control</span>
+            {% else %}
+              <span class="badge badge-accent">Target</span>
+            {% endif %}
+          </td>
+          <td class="muted">{{ corpus.language }}</td>
+          <td class="right num">{{ corpus.document_count }}</td>
+          <td class="right num">{{ corpus.selected_count }}</td>
+          <td>
+            {% if corpus.is_stale %}
+              <span class="badge badge-warning">Needs re-analysis</span>
+            {% elif corpus.analysed_at %}
+              <span class="badge badge-success">Analysed</span>
+            {% else %}
+              <span class="badge">Not analysed</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% else %}
-  <p class="muted">No corpora yet. Create one below to get started.</p>
+  <div class="empty">
+    <h2>Create your first corpus</h2>
+    <p>
+      Start with a <strong>target</strong> corpus &mdash; the documents whose
+      vocabulary you want to learn. Once it has documents you can analyse it,
+      then add a control corpus later to rank the results by how distinctive
+      they are.
+    </p>
+  </div>
 {% endif %}
 
-<h2>New corpus</h2>
-<form method="post" class="stack">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Create</button>
-</form>
+<div class="card">
+  <h2>New corpus</h2>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <button type="submit" class="button-primary">Create corpus</button>
+  </form>
+</div>
+
 {% endblock %}

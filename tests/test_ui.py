@@ -100,8 +100,8 @@ def test_sign_in_page_offers_google_and_no_password_form(page, live_server, tran
 def test_ngram_list_shows_the_merged_turkish_ngram(page, live_server, browser_corpus):
     login(page, live_server)
     page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/ngrams/1/")
-    assert page.locator('.ngrams li', has_text="İstanbul").count() == 1
-    assert page.locator('.ngrams li', has_text="İstanbul").inner_text().find("6") != -1
+    assert page.locator(".ngram-row", has_text="İstanbul").count() == 1
+    assert page.locator(".ngram-row", has_text="İstanbul").inner_text().find("6") != -1
 
 
 def test_checkbox_can_select_and_it_survives_a_reload(page, live_server, browser_corpus):
@@ -139,14 +139,14 @@ def test_selecting_then_writing_an_example_clears_the_todo_list(page, live_serve
     page.wait_for_timeout(400)
 
     page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/needs-description/")
-    assert page.locator(".ngrams li", has_text="İstanbul").count() == 1
+    assert page.locator(".ngrams tbody tr", has_text="İstanbul").count() == 1
 
     page.click('.ngrams a:has-text("İstanbul")')
     page.fill("#chosen_text", "İstanbul çok büyük bir şehirdir.")
     page.click("button[type=submit]")
 
     page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/needs-description/")
-    assert page.locator(".ngrams li", has_text="İstanbul").count() == 0
+    assert page.locator(".ngrams tbody tr", has_text="İstanbul").count() == 0
 
 
 def test_sentences_are_listed_with_the_match_highlighted(page, live_server, browser_corpus):
@@ -154,7 +154,7 @@ def test_sentences_are_listed_with_the_match_highlighted(page, live_server, brow
     ngram = browser_corpus.ngrams.get(n=1, key="istanbul")
     page.goto(f"{live_server.url}/ngram/{ngram.pk}/")
     assert page.locator(".results li").count() == 6
-    assert page.locator(".results b").first.inner_text().lower().endswith("stanbul")
+    assert page.locator(".results mark").first.inner_text().lower().endswith("stanbul")
 
 
 def test_uploading_a_document_and_analysing_produces_ngrams(page, live_server, browser_user):
@@ -172,8 +172,8 @@ def test_uploading_a_document_and_analysing_produces_ngrams(page, live_server, b
         page.click('button:has-text("Upload")')
 
     page.click('button:has-text("Analyse")')
-    page.click('a:has-text("#1")')
-    assert page.locator(".ngrams li", has_text="İstanbul").count() == 1
+    page.click('a:has-text("1-gram")')
+    assert page.locator(".ngram-row", has_text="İstanbul").count() == 1
 
 
 def test_another_users_corpus_is_not_reachable(page, live_server, browser_corpus, django_user_model):
@@ -188,10 +188,46 @@ def test_filter_box_narrows_the_list(page, live_server, browser_corpus):
     """Filtering folds the query, so an all-caps Turkish search still hits."""
     login(page, live_server)
     page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/ngrams/1/")
-    assert page.locator(".ngrams li").count() > 1
+    assert page.locator(".ngram-row").count() > 1
 
     page.fill('input[name="q"]', "İSTANBUL")
     page.click('button:has-text("Filter")')
 
-    assert page.locator(".ngrams li").count() == 1
-    assert page.locator(".ngrams li").first.inner_text().find("İstanbul") != -1
+    assert page.locator(".ngram-row").count() == 1
+    assert page.locator(".ngram-row").first.inner_text().find("İstanbul") != -1
+
+
+def test_keyboard_triage_selects_without_the_mouse(page, live_server, browser_corpus):
+    """Triaging thousands of n-grams by mouse is hours of avoidable work.
+
+    j/k move the active row and space keeps it, so the whole list can be
+    worked through from the home row.
+    """
+    login(page, live_server)
+    page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/ngrams/1/")
+    first = page.locator(".ngram-row").first
+
+    page.keyboard.press("j")
+    assert "is-active" in first.get_attribute("class")
+
+    page.keyboard.press(" ")
+    page.wait_for_timeout(400)
+    page.reload()
+    assert page.locator(".ngram-row").first.locator(".ngram-checkbox").is_checked() is True
+
+
+def test_slash_focuses_the_filter_box(page, live_server, browser_corpus):
+    login(page, live_server)
+    page.goto(f"{live_server.url}/corpus/{browser_corpus.pk}/ngrams/1/")
+    page.keyboard.press("/")
+    assert page.evaluate("document.activeElement.id") == "filter-input"
+
+
+def test_a_frequent_ngram_does_not_render_every_sentence(page, live_server, browser_corpus):
+    """A common n-gram matches far more sentences than fit on one page."""
+    from corpus.models import RESULT_PAGE_SIZE
+
+    ngram = browser_corpus.ngrams.filter(n=1).order_by("-count").first()
+    login(page, live_server)
+    page.goto(f"{live_server.url}/ngram/{ngram.pk}/")
+    assert page.locator(".results li").count() <= RESULT_PAGE_SIZE

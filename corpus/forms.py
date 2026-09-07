@@ -32,6 +32,9 @@ class CorpusForm(forms.ModelForm):
         }
 
     def __init__(self, *args, owner=None, **kwargs):
+        # Labels sit above their control, so the trailing colon reads as a
+        # typo rather than as punctuation.
+        kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
         # Only ever offer the user their own control corpora - the dropdown
         # would otherwise expose other people's corpus names.
@@ -49,6 +52,10 @@ class UploadForm(forms.Form):
     files = MultipleFileField(
         label=f"Documents ({', '.join(SUPPORTED_EXTENSIONS)})",
     )
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("label_suffix", "")
+        super().__init__(*args, **kwargs)
 
     def clean_files(self):
         """Reject oversized uploads before anything tries to parse them.

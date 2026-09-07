@@ -1,48 +1,158 @@
 {% extends "corpus/base.html" %}
 {% block title %}{{ corpus.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <div class="breadcrumbs__inner">
+    <a href="{% url 'corpus-list' %}">Corpora</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <span aria-current="page">{{ corpus.name }}</span>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
-<h1>{{ corpus.name }} <span class="muted">{{ corpus.get_kind_display }}</span></h1>
-<p><a href="{% url 'corpus-edit' corpus.pk %}">Settings</a>{% if corpus.control_corpus %} <span class="muted">scored against {{ corpus.control_corpus.name }}</span>{% endif %}</p>
+
+<div class="page-head">
+  <h1>
+    {{ corpus.name }}
+    {% if corpus.kind == 'control' %}
+      <span class="badge">Control</span>
+    {% else %}
+      <span class="badge badge-accent">Target</span>
+    {% endif %}
+  </h1>
+  <p>
+    {{ corpus.language }}
+    {% if corpus.control_corpus %}
+      &middot; scored against <strong>{{ corpus.control_corpus.name }}</strong>
+    {% endif %}
+    &middot; <a href="{% url 'corpus-edit' corpus.pk %}">Settings</a>
+  </p>
+</div>
 
 {% if corpus.is_stale %}
   <p class="warning">
-    Documents have been added since the last analysis. Re-analyse to bring the
-    n-grams up to date &mdash; your selections and example sentences are kept.
+    <strong>Documents have been added since the last analysis.</strong>
+    Re-analyse to bring the n-grams up to date &mdash; your selections and
+    example sentences are kept.
   </p>
 {% endif %}
 
-<h2>N-grams</h2>
-{% if corpus.analysed_at %}
-  <p class="tabs">
-    {% for n, count in counts.items %}
-      <a href="{% url 'ngram-list' corpus.pk n %}">#{{ n }} <span class="muted">{{ count }}</span></a>
-    {% endfor %}
-  </p>
-  <p>
-    <a href="{% url 'needs-description' corpus.pk %}">Needs a description ({{ needs_description_count }})</a>
-    &middot;
-    <a href="{% url 'export' corpus.pk %}">Export CSV</a>
-  </p>
-{% else %}
-  <p class="muted">Not analysed yet.</p>
-{% endif %}
+<ol class="stages">
 
-<form method="post" action="{% url 'analyse' corpus.pk %}">
-  {% csrf_token %}
-  <button type="submit">{% if corpus.analysed_at %}Re-analyse{% else %}Analyse{% endif %}</button>
-  {% if corpus.analysed_at %}<span class="muted">last run {{ corpus.analysed_at }}</span>{% endif %}
-</form>
+  <li class="stage stage--{{ stages.documents }}">
+    <div class="stage__body">
+      <div class="stage__head">
+        <h2>Add documents</h2>
+        {% if documents %}<span class="badge">{{ documents|length }} uploaded</span>{% endif %}
+      </div>
+      {% if documents %}
+        <ul class="doc-list">
+          {% for document in documents %}<li>{{ document.filename }}</li>{% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">
+          Upload the documents whose vocabulary you want to analyse. Only the
+          extracted text is kept &mdash; the original files are discarded.
+        </p>
+      {% endif %}
+      <form method="post" action="{% url 'upload-documents' corpus.pk %}"
+            enctype="multipart/form-data" class="form" data-pending="Uploading&hellip;">
+        {% csrf_token %}
+        {{ upload_form.as_div }}
+        <button type="submit">Upload</button>
+      </form>
+    </div>
+  </li>
 
-<h2>Documents ({{ documents|length }})</h2>
-{% if documents %}
-  <ul>{% for document in documents %}<li>{{ document.filename }}</li>{% endfor %}</ul>
-{% else %}
-  <p class="muted">No documents yet.</p>
-{% endif %}
+  <li class="stage stage--{{ stages.analyse }}">
+    <div class="stage__body">
+      <div class="stage__head">
+        <h2>Analyse</h2>
+        {% if corpus.analysed_at %}
+          <span class="badge">{{ total_ngrams }} n-gram{{ total_ngrams|pluralize }}</span>
+        {% endif %}
+      </div>
+      <p class="muted">
+        Breaks the documents into n-grams of 1 to {{ counts|length }} words and counts them.
+        {% if corpus.analysed_at %}Re-analysing keeps every selection and example sentence.{% endif %}
+      </p>
+      <form method="post" action="{% url 'analyse' corpus.pk %}" class="actions"
+            data-pending="Analysing&hellip; this can take a minute">
+        {% csrf_token %}
+        <button type="submit" {% if stages.analyse == 'current' %}class="button-primary"{% endif %}>
+          {% if corpus.analysed_at %}Re-analyse{% else %}Analyse{% endif %}
+        </button>
+        {% if corpus.analysed_at %}
+          <span class="subtle">last run {{ corpus.analysed_at }}</span>
+        {% endif %}
+      </form>
+    </div>
+  </li>
 
-<form method="post" action="{% url 'upload-documents' corpus.pk %}" enctype="multipart/form-data" class="stack">
-  {% csrf_token %}
-  {{ upload_form.as_p }}
-  <button type="submit">Upload</button>
-</form>
+  <li class="stage stage--{{ stages.triage }}">
+    <div class="stage__body">
+      <div class="stage__head">
+        <h2>Choose the n-grams worth keeping</h2>
+        {% if selected_count %}<span class="badge badge-success">{{ selected_count }} selected</span>{% endif %}
+      </div>
+      {% if corpus.analysed_at %}
+        <p class="muted">Pick a phrase length to work through.</p>
+        <nav class="tabs">
+          {% for n, count in counts.items %}
+            <a href="{% url 'ngram-list' corpus.pk n %}">
+              {{ n }}-gram{{ n|pluralize }} <span class="count">{{ count }}</span>
+            </a>
+          {% endfor %}
+        </nav>
+      {% else %}
+        <p class="muted">Available once the corpus has been analysed.</p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="stage stage--{{ stages.describe }}">
+    <div class="stage__body">
+      <div class="stage__head">
+        <h2>Write an example for each</h2>
+        {% if needs_description_count %}
+          <span class="badge badge-warning">{{ needs_description_count }} outstanding</span>
+        {% elif selected_count %}
+          <span class="badge badge-success">All done</span>
+        {% endif %}
+      </div>
+      {% if selected_count %}
+        <p class="muted">
+          Every n-gram you keep needs an illustrative sentence from the corpus.
+        </p>
+        <p class="actions">
+          <a class="button" href="{% url 'needs-description' corpus.pk %}">
+            Review outstanding ({{ needs_description_count }})
+          </a>
+        </p>
+      {% else %}
+        <p class="muted">Available once you have selected some n-grams.</p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="stage stage--{{ stages.export }}">
+    <div class="stage__body">
+      <div class="stage__head"><h2>Export</h2></div>
+      {% if selected_count %}
+        <p class="muted">
+          Download every selected n-gram with its count, importance and example
+          sentence as CSV.
+        </p>
+        <p class="actions">
+          <a class="button" href="{% url 'export' corpus.pk %}">Export CSV</a>
+        </p>
+      {% else %}
+        <p class="muted">Available once you have selected some n-grams.</p>
+      {% endif %}
+    </div>
+  </li>
+
+</ol>
 {% endblock %}

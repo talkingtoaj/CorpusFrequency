@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from corpus.forms import CorpusForm, UploadForm
-from corpus.models import MAX_N, PAGE_SIZE, Corpus, Ngram
+from corpus.models import MAX_N, PAGE_SIZE, RESULT_PAGE_SIZE, Corpus, Ngram
 from corpus.services import ngrams as ngram_service
 from corpus.services import scoring as scoring_service
 from corpus.services import search as search_service
@@ -58,12 +58,47 @@ def corpus_list(request):
     return render(request, "corpus/corpus_list.html", {"corpora": corpora, "form": form})
 
 
+# The corpus page is laid out as the route through the task rather than as a
+# pile of unrelated controls, so the stages are named in the order they are
+# worked through.
+STAGE_NAMES = ["documents", "analyse", "triage", "describe", "export"]
+
+
+def workflow_stages(corpus, selected_count, outstanding_count):
+    """Label each stage 'done', 'current' or 'todo'.
+
+    The first unfinished stage is the current one and everything after it is
+    still to come, which is what lets the page show someone where they are
+    rather than making them work it out.
+    """
+    finished = [
+        corpus.documents.exists(),
+        corpus.analysed_at is not None and not corpus.is_stale,
+        selected_count > 0,
+        selected_count > 0 and outstanding_count == 0,
+        # Export is the thing you leave with, so it never reads as "done".
+        False,
+    ]
+    states, current_claimed = [], False
+    for is_finished in finished:
+        if is_finished:
+            states.append("done")
+        elif not current_claimed:
+            states.append("current")
+            current_claimed = True
+        else:
+            states.append("todo")
+    return dict(zip(STAGE_NAMES, states))
+
+
 @login_required
 def corpus_detail(request, pk):
     corpus = owned(request, pk)
     counts = {
         n: corpus.ngrams.filter(n=n).count() for n in range(1, MAX_N + 1)
     }
+    selected_count = corpus.ngrams.filter(selected=True).count()
+    needs_description_count = corpus.ngrams.filter(selected=True, chosen_text="").count()
     return render(
         request,
         "corpus/corpus_detail.html",
@@ -72,9 +107,10 @@ def corpus_detail(request, pk):
             "documents": corpus.documents.all(),
             "upload_form": UploadForm(),
             "counts": counts,
-            "needs_description_count": corpus.ngrams.filter(
-                selected=True, chosen_text=""
-            ).count(),
+            "total_ngrams": sum(counts.values()),
+            "selected_count": selected_count,
+            "needs_description_count": needs_description_count,
+            "stages": workflow_stages(corpus, selected_count, needs_description_count),
         },
     )
 
@@ -163,6 +199,29 @@ def paginate(request, entries):
     return paginator.get_page(request.GET.get("page"))
 
 
+# Half the bar track, since the bar diverges from a centre line.
+BAR_MAX_PERCENT = 50
+
+
+def add_importance_bars(page):
+    """Size each n-gram's importance bar relative to the largest on the page.
+
+    Scaling per page rather than per corpus keeps the bars readable deep into
+    the tail, where every score is small and a corpus-wide scale would draw
+    them all as invisible slivers. Importance is signed, so the bar also
+    records which side of zero it falls on.
+    """
+    magnitudes = [abs(e.importance) for e in page if e.importance is not None]
+    scale = max(magnitudes) if magnitudes else 0
+    for entry in page:
+        scored = entry.importance is not None
+        entry.bar_negative = scored and entry.importance < 0
+        entry.bar_width = (
+            round(abs(entry.importance) / scale * BAR_MAX_PERCENT) if scored and scale else 0
+        )
+    return page
+
+
 @login_required
 def ngram_list(request, pk, n):
     corpus = owned(request, pk)
@@ -180,10 +239,11 @@ def ngram_list(request, pk, n):
         {
             "corpus": corpus,
             "n": n,
-            "page_obj": paginate(request, entries),
+            "page_obj": add_importance_bars(paginate(request, entries)),
             "total": entries.count(),
             "ordering": ordering,
             "query": query,
+            "scored": corpus.control_corpus_id is not None,
         },
     )
 
@@ -191,13 +251,19 @@ def ngram_list(request, pk, n):
 @login_required
 def ngram_detail(request, pk):
     ngram = owned_ngram(request, pk)
+    # A frequent 1-gram matches thousands of sentences. Rendering them all
+    # produced a page nobody could read and a response measured in megabytes,
+    # so the concordance is paged like every other long list here.
+    results = search_service.search(ngram.corpus, ngram.display)
+    paginator = Paginator(results, RESULT_PAGE_SIZE)
     return render(
         request,
         "corpus/ngram_detail.html",
         {
             "corpus": ngram.corpus,
             "ngram": ngram,
-            "results": search_service.search(ngram.corpus, ngram.display),
+            "page_obj": paginator.get_page(request.GET.get("page")),
+            "total": len(results),
         },
     )
 
