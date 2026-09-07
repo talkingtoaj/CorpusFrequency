@@ -1,0 +1,42 @@
+{% extends "corpus/base.html" %}
+{% load static %}
+{% block title %}{{ corpus.name }} &mdash; {{ n }}-grams{% endblock %}
+{% block content %}
+<h1><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a> &mdash; {{ n }}-grams</h1>
+
+<p class="tabs">
+  <a href="{% querystring by=None page=None %}" {% if ordering == '-count' %}class="current"{% endif %}>By frequency</a>
+  <a href="{% querystring by='importance' page=None %}" {% if ordering == '-importance' %}class="current"{% endif %}>By importance</a>
+</p>
+
+{% include "corpus/_search.html" %}
+
+<p class="muted">
+  {{ total }} n-gram{{ total|pluralize }}{% if query %} matching &ldquo;{{ query }}&rdquo;{% endif %}
+</p>
+
+{% if not page_obj.object_list %}
+  <p class="muted">
+    Nothing to show.
+    {% if ordering == '-importance' and not query %}Set a control corpus in Settings and re-analyse to score importance.{% endif %}
+  </p>
+{% endif %}
+
+<ul class="ngrams">
+{% for ngram in page_obj %}
+  <li>
+    <input type="checkbox" class="ngram-checkbox" data-url="{% url 'toggle-selected' ngram.pk %}"
+           data-ngram="{{ ngram.display }}" {% if ngram.selected %}checked{% endif %}>
+    <a href="{% url 'ngram-detail' ngram.pk %}">{{ ngram.display }}</a>
+    <span class="muted">{{ ngram.count }}{% if ngram.importance is not None %} &middot; {{ ngram.importance|floatformat:2 }}{% endif %}</span>
+    {% if ngram.chosen_text %}<span class="tick" title="{{ ngram.chosen_text }}">has example</span>{% endif %}
+  </li>
+{% endfor %}
+</ul>
+
+{% include "corpus/_pagination.html" %}
+{% endblock %}
+{% block scripts %}
+<form id="csrf-holder" hidden>{% csrf_token %}</form>
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}

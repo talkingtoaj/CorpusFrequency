@@ -1,0 +1,23 @@
+{% extends "corpus/base.html" %}
+{% block title %}{{ ngram.display }}{% endblock %}
+{% block content %}
+<h1>{{ ngram.display }} <span class="muted">{{ ngram.count }}</span></h1>
+<p><a href="{% url 'ngram-list' corpus.pk ngram.n %}">Back to {{ ngram.n }}-grams</a></p>
+
+<form method="post" action="{% url 'save-text' ngram.pk %}" class="stack">
+  {% csrf_token %}
+  <label for="chosen_text">Example sentence</label>
+  <textarea id="chosen_text" name="chosen_text" rows="3">{{ ngram.chosen_text }}</textarea>
+  <button type="submit">Save</button>
+</form>
+
+<h2>Found in {{ results|length }} sentence(s)</h2>
+<ul class="results">
+{% for result in results %}
+  <li>
+    <span class="muted">{{ result.filename }}</span>
+    {{ result.before }}<b>{{ result.match }}</b>{{ result.after }}
+  </li>
+{% endfor %}
+</ul>
+{% endblock %}

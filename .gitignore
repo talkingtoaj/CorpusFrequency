@@ -1,6 +1,11 @@
 # sensitive information
-input_files
-output.txt
+/input_files
+/output.txt
+/state
+
+# django
+/db.sqlite3
+/staticfiles/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
