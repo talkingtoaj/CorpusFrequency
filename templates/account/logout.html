@@ -1,10 +1,17 @@
 {% extends "corpus/base.html" %}
 {% block title %}Sign out{% endblock %}
 {% block content %}
-<h1>Sign out</h1>
-<p>Are you sure you want to sign out?</p>
-<form method="post" action="{% url 'account_logout' %}">
-  {% csrf_token %}
-  <button type="submit">Sign out</button>
-</form>
+<div class="signin">
+  <div class="card">
+    <h1>Sign out</h1>
+    <p>Are you sure you want to sign out?</p>
+    <form method="post" action="{% url 'account_logout' %}">
+      {% csrf_token %}
+      <div class="actions actions--center">
+        <button type="submit" class="button-primary">Sign out</button>
+        <a class="button" href="{% url 'corpus-list' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}

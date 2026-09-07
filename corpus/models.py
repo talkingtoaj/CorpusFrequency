@@ -11,6 +11,11 @@ MAX_N = 6
 # thousands of them, which is far too many to put in one document.
 PAGE_SIZE = 100
 
+# How many concordance lines to show per page on an n-gram's detail page.
+# Smaller than PAGE_SIZE because each line is a full sentence rather than a
+# single table row.
+RESULT_PAGE_SIZE = 20
+
 # n-grams occurring fewer times than this are noise. Applied only after
 # case variants have been merged - filtering earlier throws away exactly
 # the split n-grams the folding exists to recombine.

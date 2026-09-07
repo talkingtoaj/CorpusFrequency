@@ -1,14 +1,37 @@
 {% extends "corpus/base.html" %}
 {% block title %}{{ corpus.name }} settings{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <div class="breadcrumbs__inner">
+    <a href="{% url 'corpus-list' %}">Corpora</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <span aria-current="page">Settings</span>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
-<h1><a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a> &mdash; settings</h1>
-<p class="muted">
-  Choosing a control corpus ranks this corpus's n-grams by how characteristic
-  they are of it, rather than by raw frequency. Saving re-scores immediately.
-</p>
-<form method="post" class="stack">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save</button>
-</form>
+
+<div class="page-head">
+  <h1>Settings</h1>
+  <p>
+    Choosing a control corpus ranks this corpus's n-grams by how characteristic
+    they are of it rather than by raw frequency. Saving re-scores immediately.
+  </p>
+</div>
+
+<div class="card">
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <div class="actions">
+      <button type="submit" class="button-primary">Save changes</button>
+      <a class="button" href="{% url 'corpus-detail' corpus.pk %}">Cancel</a>
+    </div>
+  </form>
+</div>
+
 {% endblock %}

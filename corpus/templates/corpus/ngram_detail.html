@@ -1,23 +1,83 @@
 {% extends "corpus/base.html" %}
 {% block title %}{{ ngram.display }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <div class="breadcrumbs__inner">
+    <a href="{% url 'corpus-list' %}">Corpora</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <a href="{% url 'corpus-detail' corpus.pk %}">{{ corpus.name }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <a href="{% url 'ngram-list' corpus.pk ngram.n %}">{{ ngram.n }}-gram{{ ngram.n|pluralize }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+    <span aria-current="page">{{ ngram.display }}</span>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
-<h1>{{ ngram.display }} <span class="muted">{{ ngram.count }}</span></h1>
-<p><a href="{% url 'ngram-list' corpus.pk ngram.n %}">Back to {{ ngram.n }}-grams</a></p>
 
-<form method="post" action="{% url 'save-text' ngram.pk %}" class="stack">
-  {% csrf_token %}
-  <label for="chosen_text">Example sentence</label>
-  <textarea id="chosen_text" name="chosen_text" rows="3">{{ ngram.chosen_text }}</textarea>
-  <button type="submit">Save</button>
-</form>
+<div class="page-head">
+  <h1>
+    {{ ngram.display }}
+    <span class="badge">{{ ngram.count }} occurrence{{ ngram.count|pluralize }}</span>
+    {% if ngram.importance is not None %}
+      <span class="badge {% if ngram.importance > 0 %}badge-success{% endif %}">
+        importance {{ ngram.importance|floatformat:2 }}
+      </span>
+    {% endif %}
+    {% if ngram.selected %}<span class="badge badge-accent">kept</span>{% endif %}
+  </h1>
+</div>
 
-<h2>Found in {{ results|length }} sentence(s)</h2>
+<div class="card">
+  <h2>Example sentence</h2>
+  <p class="muted">
+    Pick a sentence below that shows this phrase in use, or write your own.
+    Saving one marks the n-gram as kept.
+  </p>
+  <form method="post" action="{% url 'save-text' ngram.pk %}" class="form">
+    {% csrf_token %}
+    <div class="field">
+      <label for="chosen_text">Example</label>
+      <textarea id="chosen_text" name="chosen_text" rows="3">{{ ngram.chosen_text }}</textarea>
+    </div>
+    <button type="submit" class="button-primary">Save example</button>
+  </form>
+</div>
+
+<h2>Found in {{ total }} sentence{{ total|pluralize }}</h2>
+<p class="subtle">Click any sentence to copy it into the example box above.</p>
+
 <ul class="results">
-{% for result in results %}
+{% for result in page_obj %}
   <li>
-    <span class="muted">{{ result.filename }}</span>
-    {{ result.before }}<b>{{ result.match }}</b>{{ result.after }}
+    <span class="source">{{ result.filename }}</span>
+    <span class="sentence">{{ result.before }}<mark>{{ result.match }}</mark>{{ result.after }}</span>
   </li>
+{% empty %}
+  <li class="muted">No sentences matched.</li>
 {% endfor %}
 </ul>
+
+{% include "corpus/_pagination.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Clicking a concordance line drops it into the example box. Retyping a
+  // sentence that is already on screen is the kind of busywork this page
+  // exists to remove.
+  const target = document.getElementById('chosen_text')
+  document.querySelectorAll('.results .sentence').forEach(sentence => {
+    sentence.style.cursor = 'pointer'
+    sentence.title = 'Use this sentence as the example'
+    sentence.addEventListener('click', () => {
+      target.value = sentence.innerText.trim()
+      target.focus()
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  })
+</script>
 {% endblock %}
