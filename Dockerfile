@@ -2,7 +2,8 @@
 # stage carries only the interpreter, the venv and the app.
 FROM python:3.14-slim AS build
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Pinned, same version as the other apps. Never :latest, it changes builds under you.
+COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /usr/local/bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \

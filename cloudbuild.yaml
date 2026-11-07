@@ -11,6 +11,9 @@ substitutions:
   _SERVICE: corpusfrequency
   _REGION: us-central1
   _INSTANCE: lb-db2
+  # Its own runtime account (never the default compute account). It can reach
+  # Cloud SQL and the four secrets below, nothing else.
+  _RUNTIME_SA: "corpusfrequency-run@lifebalance-nuxt.iam.gserviceaccount.com"
   # One line, no spaces after the commas - gcloud parses this as a literal
   # comma-separated list and will not strip whitespace around the entries.
   _SECRETS: "DJANGO_SECRET_KEY=corpusfrequency-secret-key:latest,DATABASE_URL=corpusfrequency-database-url:latest,GOOGLE_OAUTH_CLIENT_ID=corpusfrequency-google-client-id:latest,GOOGLE_OAUTH_SECRET=corpusfrequency-google-secret:latest"
@@ -46,6 +49,7 @@ steps:
       - "${_SERVICE}-migrate"
       - "--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:${_TAG}"
       - "--region=${_REGION}"
+      - "--service-account=${_RUNTIME_SA}"
       - "--set-cloudsql-instances=$PROJECT_ID:${_REGION}:${_INSTANCE}"
       - "--set-env-vars=DJANGO_DEBUG=0,CLOUD_SQL_INSTANCE=$PROJECT_ID:${_REGION}:${_INSTANCE}"
       - "--set-secrets=${_SECRETS}"
@@ -64,6 +68,8 @@ steps:
       - "--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_SERVICE}/${_SERVICE}:${_TAG}"
       - "--region=${_REGION}"
       - "--platform=managed"
+      - "--service-account=${_RUNTIME_SA}"
+      - "--startup-probe=httpGet.path=/health,periodSeconds=2,failureThreshold=30"
       - "--allow-unauthenticated"
       - "--add-cloudsql-instances=$PROJECT_ID:${_REGION}:${_INSTANCE}"
       - "--set-env-vars=DJANGO_DEBUG=0,CLOUD_SQL_INSTANCE=$PROJECT_ID:${_REGION}:${_INSTANCE}"
@@ -73,3 +79,13 @@ steps:
       - "--memory=1Gi"
       - "--cpu=1"
       - "--timeout=300"
+
+  # Smoke Test: the live URL answers and the sign-in page renders.
+  - id: smoke
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        URL=$$(gcloud run services describe ${_SERVICE} --region=${_REGION} --format='value(status.url)')
+        bash scripts/smoke.sh "$$URL"
