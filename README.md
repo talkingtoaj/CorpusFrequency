@@ -97,7 +97,7 @@ Cloud Run, via Cloud Build:
 gcloud builds submit --config cloudbuild.yaml
 ```
 
-Build → migrate → deploy. Migrations run as a Cloud Run **job** against the
+Build → migrate → deploy → smoke test (`scripts/smoke.sh`). The service and the migrate job run as their own account, `corpusfrequency-run`, and Cloud Run waits for `/health` at start. Migrations run as a Cloud Run **job** against the
 image being deployed, never at container startup: startup migrations race
 between concurrent cold starts, and a failed one looks like a crash loop.
 
